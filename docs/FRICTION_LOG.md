@@ -44,5 +44,14 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Expected:** boots to the home screen within the timeout and appears in `vega device list`.
 - **Actual:** the VVD window opened and sat on the Fire TV logo for 17+ minutes at ~250% CPU. `vega device list` stayed empty, and the `start` command ignored its 180 s timeout and kept running.
 - **Severity:** high (blocks the whole Vega path).
-- **Workaround:** retrying once with `--timeout 600` (see PROGRESS).
+- **Workaround:** killed all VVD/dutyfree processes, then `vega virtual-device start --timeout 600`; the second boot registered and reported "Virtual device ready" within about a minute. Cause of the first hang is unknown (first-boot image setup is a guess, not verified).
 - **Suggestion:** the timeout should terminate the process and print the cause; the troubleshooting page (kvd-issues) has no entry for boot hangs on Apple Silicon or newer macOS releases; list the supported macOS versions in the install doc.
+
+## 6. Metro/`build-vega` hangs silently on watchman under ~/Documents (macOS)
+- **Task:** build the hello-world app (`npm run build:app`).
+- **Steps:** repo in `~/Documents/GitHub/...`, `watchman` installed via Homebrew for the Vega prerequisites, run `react-native build-vega --build-type Release`.
+- **Expected:** build completes in a minute or two.
+- **Actual:** 13+ minutes at 0% CPU with no output. With stdin closed, Metro prints `Waiting for Watchman watch-project (Ns)...` forever. Root cause: macOS shows a one-time dialog "watchman would like to access files in your Documents folder" that is easy to miss, and watchman blocks until it is answered. The wrapper (`npm run build:app` via npm-run-all) hides Metro's message entirely.
+- **Severity:** high (looks like a hang, costs 15+ minutes).
+- **Workaround:** a stub `watchman` earlier on PATH that exits 1 makes Metro fall back and the build succeeds; the proper fix is to click Allow on the macOS prompt (or keep the repo outside Documents/Desktop/Downloads).
+- **Suggestion:** the install docs should warn that macOS protects Documents/Desktop/Downloads and say to keep projects elsewhere or grant watchman access; `build-vega` should surface the watchman wait message and time out.
