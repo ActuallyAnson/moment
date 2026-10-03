@@ -1,6 +1,8 @@
 import {API_BASE, REQUEST_TIMEOUT_MS} from './config';
 
-export type AskResult = {answer: string; t: number};
+export type AskResult = {answer: string; t: number; latencyMs?: number; framesUsed?: number[]; model?: string};
+
+const CLIP_ID = 'tos';
 
 export class AskError extends Error {}
 
@@ -25,7 +27,7 @@ export const ask = async (question: string, t: number): Promise<AskResult> => {
       fetch(`${API_BASE}/ask`, {
         method: 'POST',
         headers: {'content-type': 'application/json'},
-        body: JSON.stringify({question, t}),
+        body: JSON.stringify({clipId: CLIP_ID, timestamp: t, question}),
       }),
       REQUEST_TIMEOUT_MS,
     );

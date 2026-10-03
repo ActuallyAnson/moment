@@ -6,3 +6,8 @@ literal:LOCAL-NOTES.md
 build/
 *.vpkg
 .DS_Store
+clips/*/clip.mp4
+clips/*/frames/
+clips/*/source-en.srt
+app/assets/raw/clip.mp4
+eval/results/stub-*

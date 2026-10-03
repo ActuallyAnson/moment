@@ -12,3 +12,9 @@
 | 2026-10-04 | Act on key-up only | Avoids the opening key's release selecting the first question | Act on key-down |
 | 2026-10-04 | Backend reached at 10.0.2.2:8787; backend binds 127.0.0.1 | Works on the VVD with no firewall prompt | `vda reverse` + 127.0.0.1 |
 | 2026-10-04 | Removed unused template files (tiles, images, template tests) | Dead code; UI tests are out of scope per brief | Keep |
+| 2026-10-04 | Clip: Tears of Steel excerpt 0:20-1:05 (CC-BY 3.0), original audio replaced with silence | Has dialogue + official SRT, readable on-screen text, two people, lab scene; the soundtrack is credited CC-BY-ND, which the brief says to avoid | Sintel (animated, fallback), Big Buck Bunny (no dialogue) |
+| 2026-10-04 | Media files not committed; `clips/fetch-tos.sh` rebuilds them; index.json + subs.srt are committed | Keeps repo small; reproducible | Git LFS |
+| 2026-10-04 | Bedrock: us-east-1, in-region `amazon.nova-lite-v1:0` primary, `amazon.nova-pro-v1:0` fallback (to verify on the account) | No inference profile needed there; cheapest; no model-access request for Amazon models per AWS docs | ap-southeast-1 (Geo profiles only, ~35% higher price) |
+| 2026-10-04 | `@aws-sdk/client-bedrock-runtime` is NOT installed yet; LiveClient imports it lazily | Over the 1 MB dependency rule; ask when AWS exists | Install now |
+| 2026-10-04 | Only live calls are written to eval/cost_log.csv; stub calls are not | Stub rows would pollute the spend total | Log both |
+| 2026-10-04 | Prompt says: name people only if subtitles name them; never identify real faces | Nova docs say it refuses to identify individuals | None |
