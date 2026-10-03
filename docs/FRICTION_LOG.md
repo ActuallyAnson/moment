@@ -28,3 +28,21 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Severity:** low.
 - **Workaround:** close VS Code before running the installer.
 - **Suggestion:** have the installer detect a running VS Code and offer to install the extension later.
+
+## 4. Vega installer needs stdin; piped install fails
+- **Task:** install the Vega SDK non-interactively from a terminal agent.
+- **Steps:** `curl -fsSL https://sdk-installer.vega.labcollab.net/get_vvm.sh | bash`
+- **Expected:** installs with defaults.
+- **Actual:** the CLI downloads, then fails at the "Enter new component installation directory" prompt with `failed to read input: EOF`. The script also reads `/dev/tty`, which is unavailable without a terminal.
+- **Severity:** low.
+- **Workaround:** download the script to a file and run `yes '' | bash get_vvm.sh`.
+- **Suggestion:** support a `--yes` / non-interactive flag, and fall back to defaults when stdin is not a TTY.
+
+## 5. Vega Virtual Device stuck on Fire TV boot logo (macOS 27, Apple Silicon)
+- **Task:** boot the VVD (Phase 0 no-go gate).
+- **Steps:** `vega virtual-device start --timeout 180` on macOS 27 / M-series / 18 GB RAM, SDK 0.24.12112.
+- **Expected:** boots to the home screen within the timeout and appears in `vega device list`.
+- **Actual:** the VVD window opened and sat on the Fire TV logo for 17+ minutes at ~250% CPU. `vega device list` stayed empty, and the `start` command ignored its 180 s timeout and kept running.
+- **Severity:** high (blocks the whole Vega path).
+- **Workaround:** retrying once with `--timeout 600` (see PROGRESS).
+- **Suggestion:** the timeout should terminate the process and print the cause; the troubleshooting page (kvd-issues) has no entry for boot hangs on Apple Silicon or newer macOS releases; list the supported macOS versions in the install doc.
