@@ -55,3 +55,17 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Severity:** high (looks like a hang, costs 15+ minutes).
 - **Workaround:** a stub `watchman` earlier on PATH that exits 1 makes Metro fall back and the build succeeds; the proper fix is to click Allow on the macOS prompt (or keep the repo outside Documents/Desktop/Downloads).
 - **Suggestion:** the install docs should warn that macOS protects Documents/Desktop/Downloads and say to keep projects elsewhere or grant watchman access; `build-vega` should surface the watchman wait message and time out.
+
+## 7. w3cmedia docs pin an old version and show an ordering trap
+- **Task:** play a bundled MP4 with `VideoPlayer` + `KeplerVideoSurfaceView` on RN 0.83.
+- **Steps:** follow media-player-setup (pins `~2.1.80`, a metro-react-native-babel-preset babel config) and the package README.
+- **Expected:** copy-paste setup works on the current `helloWorld` template.
+- **Actual:** npm `latest` is 2.3.2 (worked without touching babel.config.js; the doc's babel preset is from the RN 0.72 era). The README example calls `play()` inside `onSurfaceViewCreated`, but the surface was created twice before `loadedmetadata`, so `play()` ran with no source and the clock stayed at 0 with no error.
+- **Severity:** medium (silent failure, no error event).
+- **Workaround:** call `play()` only after both the surface exists and `loadedmetadata` fired.
+- **Suggestion:** update the doc to the current version and template, and show the surface-created / metadata-loaded ordering in the example.
+
+## 8. Local asset path is undocumented
+- **Task:** play a file bundled in the app.
+- **Actual:** `/pkg/assets/raw/clip.mp4` worked, with the file at `app/assets/raw/clip.mp4`. The path came from a developer-community answer, not the official docs, which only show HTTPS URLs.
+- **Severity:** low. **Suggestion:** document local-file playback and the `/pkg/assets/raw` convention.
