@@ -69,3 +69,22 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Task:** play a file bundled in the app.
 - **Actual:** `/pkg/assets/raw/clip.mp4` worked, with the file at `app/assets/raw/clip.mp4`. The path came from a developer-community answer, not the official docs, which only show HTTPS URLs.
 - **Severity:** low. **Suggestion:** document local-file playback and the `/pkg/assets/raw` convention.
+
+## 9. Host address from the Vega Virtual Device is undocumented
+- **Task:** call a backend running on the development Mac from the app on the VVD.
+- **Steps:** searched the Vega docs for the emulator-to-host loopback address.
+- **Expected:** a documented address (like Android's 10.0.2.2).
+- **Actual:** nothing in the docs. The device's default gateway (`vega exec vda -s emulator-5554 shell cat /proc/net/route`) is 10.0.2.2, which is QEMU user-mode networking; it reached a Node server bound to 127.0.0.1 on the Mac. Plain-HTTP `fetch` worked with `com.amazon.network.service` in the manifest (whether that service is required was not tested). The cleartext setting is documented only for WebViews.
+- **Severity:** medium. **Workaround:** use `http://10.0.2.2:<port>` (or `vda reverse`). **Suggestion:** document the host address and the cleartext policy for `fetch`.
+
+## 10. `player.currentTime` reads 0 immediately after `pause()`
+- **Task:** capture the playback timestamp when the viewer presses the Ask key.
+- **Steps:** call `pause()`, then read `currentTime`, in the same handler (w3cmedia 2.3.2, VVD).
+- **Expected:** the paused position.
+- **Actual:** 0. The question was sent with t=0 although the clip was at 12 s. Reading `currentTime` first and then pausing gives the right value (12.6 s, matching the burned-in counter).
+- **Severity:** high (silently wrong data). **Workaround:** read before pausing. **Suggestion:** document the behaviour, or keep `currentTime` stable while paused (the same value did read correctly in an earlier test that logged it from a timer after pausing, so the cause may be timing-related; not verified).
+
+## 11. Injecting remote keys needs `vda shell`, and the CLI examples don't say so
+- **Task:** drive the app without a mouse for repeatable tests.
+- **Actual:** `vega exec inputd-cli button_press KEY_MENU` fails with "No such file"; it works as `vega exec vda -s emulator-5554 shell "inputd-cli button_press KEY_MENU"` (inputd-cli lives on the device). `vda` itself is not on PATH after `source ~/vega/env`.
+- **Severity:** low. **Suggestion:** show the full command in the inputd-cli doc.
