@@ -33,22 +33,37 @@ export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain}: Props) => {
       left: px(SAFE_X),
       right: px(SAFE_X),
       bottom: px(SAFE_Y),
-      padding: px(40),
-      borderRadius: px(20),
-      backgroundColor: 'rgba(8,10,16,0.94)',
+      paddingVertical: px(36),
+      paddingLeft: px(52),
+      paddingRight: px(44),
+      borderRadius: px(28),
+      borderWidth: px(2),
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.card,
       zIndex: 20,
     },
-    question: {color: colors.accent, fontSize: fs(30), fontWeight: '600', marginBottom: px(12)},
-    answer: {color: colors.textPrimary, fontSize: fs(40), lineHeight: fs(56)},
-    note: {color: colors.textSecondary, fontSize: fs(28), marginTop: px(16)},
+    accentBar: {
+      position: 'absolute',
+      left: 0,
+      top: px(28),
+      bottom: px(28),
+      width: px(10),
+      borderTopRightRadius: px(6),
+      borderBottomRightRadius: px(6),
+      backgroundColor: colors.accent,
+    },
+    question: {color: colors.accent, fontSize: fs(28), fontWeight: '700', letterSpacing: 1, marginBottom: px(12)},
+    answer: {color: colors.textPrimary, fontSize: fs(42), lineHeight: fs(58)},
+    note: {color: colors.textSecondary, fontSize: fs(28), marginTop: px(18)},
     row: {flexDirection: 'row', marginTop: px(24)},
     gap: {width: px(24)},
   });
 
   return (
     <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={styles.card}>
+      <View style={styles.accentBar} aria-hidden />
       <Text style={styles.question}>
-        {state.question} · {formatTime(state.t)}
+        {state.question.toUpperCase()} · {formatTime(state.t)}
       </Text>
       {state.phase === 'loading' && (
         <View>

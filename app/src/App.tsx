@@ -7,6 +7,8 @@ import {TextScaleContext} from './ui';
 import {QuestionOverlay} from './components/QuestionOverlay';
 import {AnswerCard} from './components/AnswerCard';
 import {IdleHint} from './components/IdleHint';
+import {PausedBadge} from './components/PausedBadge';
+import {colors} from './theme';
 
 const useIdleHint = (idle: boolean): boolean => {
   const [visible, setVisible] = useState(true);
@@ -44,6 +46,8 @@ export const App = () => {
           onSurfaceViewDestroyed={player.onSurfaceViewDestroyed}
         />
         <IdleHint visible={hint} />
+        {state.phase !== 'idle' && <View style={styles.dim} pointerEvents="none" />}
+        {state.phase !== 'idle' && <PausedBadge />}
         {state.phase === 'asking' && (
           <QuestionOverlay t={state.t} onChoose={(q) => choose(q, state.t)} large={large} onToggleLarge={() => setLarge((v) => !v)} />
         )}
@@ -58,4 +62,5 @@ export const App = () => {
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: 'black'},
   video: {...StyleSheet.absoluteFillObject, zIndex: 0},
+  dim: {...StyleSheet.absoluteFillObject, backgroundColor: colors.dim, zIndex: 10},
 });
