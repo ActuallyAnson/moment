@@ -142,3 +142,6 @@ date,model,region,images,input_tokens,output_tokens,est_cost_usd,note
 2026-10-05T06:15:01.495Z,amazon.nova-lite-v1:0,us-east-1,5,3677,16,0.000224,eval-c4-f5-subs spring@6.0 attempts=1
 2026-10-05T06:15:04.027Z,amazon.nova-lite-v1:0,us-east-1,5,3858,22,0.000237,eval-c4-f5-subs llama@15.0 attempts=1
 2026-10-05T06:15:06.812Z,amazon.nova-lite-v1:0,us-east-1,5,8574,10,0.000517,eval-c4-f5-subs marketst@2.0 attempts=1
+2026-10-05T06:24:55.735Z,amazon.nova-lite-v1:0,us-east-1,5,3966,12,0.000241,eval-c4-f5-subs sintel@13.0 attempts=1
+2026-10-05T06:24:57.861Z,amazon.nova-lite-v1:0,us-east-1,5,3966,9,0.000240,eval-c4-f5-subs sintel@34.0 attempts=1
+2026-10-05T06:24:59.697Z,amazon.nova-lite-v1:0,us-east-1,5,3962,9,0.000240,eval-c4-f5-subs sintel@30.0 attempts=1
