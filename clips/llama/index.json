@@ -1,0 +1,431 @@
+{
+  "id": "llama",
+  "duration": 50,
+  "fps": 2,
+  "width": 512,
+  "frames": [
+    {
+      "t": 0,
+      "path": "frames/f_00000.jpg"
+    },
+    {
+      "t": 0.5,
+      "path": "frames/f_00001.jpg"
+    },
+    {
+      "t": 1,
+      "path": "frames/f_00002.jpg"
+    },
+    {
+      "t": 1.5,
+      "path": "frames/f_00003.jpg"
+    },
+    {
+      "t": 2,
+      "path": "frames/f_00004.jpg"
+    },
+    {
+      "t": 2.5,
+      "path": "frames/f_00005.jpg"
+    },
+    {
+      "t": 3,
+      "path": "frames/f_00006.jpg"
+    },
+    {
+      "t": 3.5,
+      "path": "frames/f_00007.jpg"
+    },
+    {
+      "t": 4,
+      "path": "frames/f_00008.jpg"
+    },
+    {
+      "t": 4.5,
+      "path": "frames/f_00009.jpg"
+    },
+    {
+      "t": 5,
+      "path": "frames/f_00010.jpg"
+    },
+    {
+      "t": 5.5,
+      "path": "frames/f_00011.jpg"
+    },
+    {
+      "t": 6,
+      "path": "frames/f_00012.jpg"
+    },
+    {
+      "t": 6.5,
+      "path": "frames/f_00013.jpg"
+    },
+    {
+      "t": 7,
+      "path": "frames/f_00014.jpg"
+    },
+    {
+      "t": 7.5,
+      "path": "frames/f_00015.jpg"
+    },
+    {
+      "t": 8,
+      "path": "frames/f_00016.jpg"
+    },
+    {
+      "t": 8.5,
+      "path": "frames/f_00017.jpg"
+    },
+    {
+      "t": 9,
+      "path": "frames/f_00018.jpg"
+    },
+    {
+      "t": 9.5,
+      "path": "frames/f_00019.jpg"
+    },
+    {
+      "t": 10,
+      "path": "frames/f_00020.jpg"
+    },
+    {
+      "t": 10.5,
+      "path": "frames/f_00021.jpg"
+    },
+    {
+      "t": 11,
+      "path": "frames/f_00022.jpg"
+    },
+    {
+      "t": 11.5,
+      "path": "frames/f_00023.jpg"
+    },
+    {
+      "t": 12,
+      "path": "frames/f_00024.jpg"
+    },
+    {
+      "t": 12.5,
+      "path": "frames/f_00025.jpg"
+    },
+    {
+      "t": 13,
+      "path": "frames/f_00026.jpg"
+    },
+    {
+      "t": 13.5,
+      "path": "frames/f_00027.jpg"
+    },
+    {
+      "t": 14,
+      "path": "frames/f_00028.jpg"
+    },
+    {
+      "t": 14.5,
+      "path": "frames/f_00029.jpg"
+    },
+    {
+      "t": 15,
+      "path": "frames/f_00030.jpg"
+    },
+    {
+      "t": 15.5,
+      "path": "frames/f_00031.jpg"
+    },
+    {
+      "t": 16,
+      "path": "frames/f_00032.jpg"
+    },
+    {
+      "t": 16.5,
+      "path": "frames/f_00033.jpg"
+    },
+    {
+      "t": 17,
+      "path": "frames/f_00034.jpg"
+    },
+    {
+      "t": 17.5,
+      "path": "frames/f_00035.jpg"
+    },
+    {
+      "t": 18,
+      "path": "frames/f_00036.jpg"
+    },
+    {
+      "t": 18.5,
+      "path": "frames/f_00037.jpg"
+    },
+    {
+      "t": 19,
+      "path": "frames/f_00038.jpg"
+    },
+    {
+      "t": 19.5,
+      "path": "frames/f_00039.jpg"
+    },
+    {
+      "t": 20,
+      "path": "frames/f_00040.jpg"
+    },
+    {
+      "t": 20.5,
+      "path": "frames/f_00041.jpg"
+    },
+    {
+      "t": 21,
+      "path": "frames/f_00042.jpg"
+    },
+    {
+      "t": 21.5,
+      "path": "frames/f_00043.jpg"
+    },
+    {
+      "t": 22,
+      "path": "frames/f_00044.jpg"
+    },
+    {
+      "t": 22.5,
+      "path": "frames/f_00045.jpg"
+    },
+    {
+      "t": 23,
+      "path": "frames/f_00046.jpg"
+    },
+    {
+      "t": 23.5,
+      "path": "frames/f_00047.jpg"
+    },
+    {
+      "t": 24,
+      "path": "frames/f_00048.jpg"
+    },
+    {
+      "t": 24.5,
+      "path": "frames/f_00049.jpg"
+    },
+    {
+      "t": 25,
+      "path": "frames/f_00050.jpg"
+    },
+    {
+      "t": 25.5,
+      "path": "frames/f_00051.jpg"
+    },
+    {
+      "t": 26,
+      "path": "frames/f_00052.jpg"
+    },
+    {
+      "t": 26.5,
+      "path": "frames/f_00053.jpg"
+    },
+    {
+      "t": 27,
+      "path": "frames/f_00054.jpg"
+    },
+    {
+      "t": 27.5,
+      "path": "frames/f_00055.jpg"
+    },
+    {
+      "t": 28,
+      "path": "frames/f_00056.jpg"
+    },
+    {
+      "t": 28.5,
+      "path": "frames/f_00057.jpg"
+    },
+    {
+      "t": 29,
+      "path": "frames/f_00058.jpg"
+    },
+    {
+      "t": 29.5,
+      "path": "frames/f_00059.jpg"
+    },
+    {
+      "t": 30,
+      "path": "frames/f_00060.jpg"
+    },
+    {
+      "t": 30.5,
+      "path": "frames/f_00061.jpg"
+    },
+    {
+      "t": 31,
+      "path": "frames/f_00062.jpg"
+    },
+    {
+      "t": 31.5,
+      "path": "frames/f_00063.jpg"
+    },
+    {
+      "t": 32,
+      "path": "frames/f_00064.jpg"
+    },
+    {
+      "t": 32.5,
+      "path": "frames/f_00065.jpg"
+    },
+    {
+      "t": 33,
+      "path": "frames/f_00066.jpg"
+    },
+    {
+      "t": 33.5,
+      "path": "frames/f_00067.jpg"
+    },
+    {
+      "t": 34,
+      "path": "frames/f_00068.jpg"
+    },
+    {
+      "t": 34.5,
+      "path": "frames/f_00069.jpg"
+    },
+    {
+      "t": 35,
+      "path": "frames/f_00070.jpg"
+    },
+    {
+      "t": 35.5,
+      "path": "frames/f_00071.jpg"
+    },
+    {
+      "t": 36,
+      "path": "frames/f_00072.jpg"
+    },
+    {
+      "t": 36.5,
+      "path": "frames/f_00073.jpg"
+    },
+    {
+      "t": 37,
+      "path": "frames/f_00074.jpg"
+    },
+    {
+      "t": 37.5,
+      "path": "frames/f_00075.jpg"
+    },
+    {
+      "t": 38,
+      "path": "frames/f_00076.jpg"
+    },
+    {
+      "t": 38.5,
+      "path": "frames/f_00077.jpg"
+    },
+    {
+      "t": 39,
+      "path": "frames/f_00078.jpg"
+    },
+    {
+      "t": 39.5,
+      "path": "frames/f_00079.jpg"
+    },
+    {
+      "t": 40,
+      "path": "frames/f_00080.jpg"
+    },
+    {
+      "t": 40.5,
+      "path": "frames/f_00081.jpg"
+    },
+    {
+      "t": 41,
+      "path": "frames/f_00082.jpg"
+    },
+    {
+      "t": 41.5,
+      "path": "frames/f_00083.jpg"
+    },
+    {
+      "t": 42,
+      "path": "frames/f_00084.jpg"
+    },
+    {
+      "t": 42.5,
+      "path": "frames/f_00085.jpg"
+    },
+    {
+      "t": 43,
+      "path": "frames/f_00086.jpg"
+    },
+    {
+      "t": 43.5,
+      "path": "frames/f_00087.jpg"
+    },
+    {
+      "t": 44,
+      "path": "frames/f_00088.jpg"
+    },
+    {
+      "t": 44.5,
+      "path": "frames/f_00089.jpg"
+    },
+    {
+      "t": 45,
+      "path": "frames/f_00090.jpg"
+    },
+    {
+      "t": 45.5,
+      "path": "frames/f_00091.jpg"
+    },
+    {
+      "t": 46,
+      "path": "frames/f_00092.jpg"
+    },
+    {
+      "t": 46.5,
+      "path": "frames/f_00093.jpg"
+    },
+    {
+      "t": 47,
+      "path": "frames/f_00094.jpg"
+    },
+    {
+      "t": 47.5,
+      "path": "frames/f_00095.jpg"
+    },
+    {
+      "t": 48,
+      "path": "frames/f_00096.jpg"
+    },
+    {
+      "t": 48.5,
+      "path": "frames/f_00097.jpg"
+    },
+    {
+      "t": 49,
+      "path": "frames/f_00098.jpg"
+    },
+    {
+      "t": 49.5,
+      "path": "frames/f_00099.jpg"
+    },
+    {
+      "t": 50,
+      "path": "frames/f_00100.jpg"
+    },
+    {
+      "t": 50.5,
+      "path": "frames/f_00101.jpg"
+    },
+    {
+      "t": 51,
+      "path": "frames/f_00102.jpg"
+    },
+    {
+      "t": 51.5,
+      "path": "frames/f_00103.jpg"
+    }
+  ],
+  "source": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Caminandes-_Llama_Drama_-_Short_Movie.ogv",
+  "license": "CC BY 3.0",
+  "attribution": "(CC) Blender Foundation | caminandes.com",
+  "excerpt": {
+    "startSec": 33,
+    "durationSec": 50
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "tos": {
+    "title": "Tears of Steel",
+    "url": "https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov",
+    "startSec": 20,
+    "durationSec": 45,
+    "srtUrl": "https://download.blender.org/demo/movies/ToS/subtitles/TOS-en.srt",
+    "license": "CC-BY 3.0",
+    "licenseUrl": "https://mango.blender.org/sharing/",
+    "attribution": "(CC) Blender Foundation | mango.blender.org"
+  },
+  "sintel": {
+    "title": "Sintel",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f1/Sintel_movie_4K.webm/Sintel_movie_4K.webm.720p.vp9.webm",
+    "startSec": 105,
+    "durationSec": 45,
+    "srtUrl": "https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://durian.blender.org/sharing/",
+    "attribution": "(c) copyright Blender Foundation | durian.blender.org"
+  },
+  "bbb": {
+    "title": "Big Buck Bunny",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Big_Buck_Bunny_4K.webm/Big_Buck_Bunny_4K.webm.720p.vp9.webm",
+    "startSec": 112,
+    "durationSec": 35,
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "attribution": "(c) copyright 2008, Blender Foundation | www.bigbuckbunny.org"
+  },
+  "spring": {
+    "title": "Spring",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/a/a5/Spring_-_Blender_Open_Movie.webm/Spring_-_Blender_Open_Movie.webm.720p.vp9.webm",
+    "startSec": 40,
+    "durationSec": 45,
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "attribution": "(CC) Blender Foundation | spring.blender.org"
+  },
+  "llama": {
+    "title": "Caminandes: Llama Drama",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Caminandes-_Llama_Drama_-_Short_Movie.ogv",
+    "startSec": 33,
+    "durationSec": 50,
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "attribution": "(CC) Blender Foundation | caminandes.com"
+  },
+  "marketst": {
+    "title": "A Trip Down Market Street (1906)",
+    "url": "https://archive.org/download/sanfran_hd_h264/sanfran_1080p_stabilized.mp4",
+    "startSec": 525,
+    "durationSec": 55,
+    "license": "Public domain (US film published before 1929)",
+    "licenseUrl": "https://archive.org/details/sanfran_hd_h264",
+    "attribution": "Miles Brothers, A Trip Down Market Street (1906), via the Prelinger Archives / Internet Archive"
+  }
+}
