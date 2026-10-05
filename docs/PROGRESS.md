@@ -37,3 +37,7 @@
 - 10 confirmed questions, default config (5 frames / last 4 s + subtitles +/-10 s): 5 correct, 2 partial, 3 wrong, 0 hallucinated. p50 2.5 s, p95 2.9 s, ~$0.00023/question. Details: eval/results/live-lite-default.grades.md.
 - All 3 wrong answers are "I'm not sure" on things the frames show (over-cautious prompt); 2 answers carry a stray "Answer:" prefix.
 - Go/no-go: NOT decided; waiting on owner. Reproduce: `AWS_PROFILE=moment AWS_REGION=us-east-1 BEDROCK_MODE=live BEDROCK_MODEL_ID=amazon.nova-lite-v1:0 node backend/scripts/run-eval.ts <label>`.
+- Prompt v2 re-run (same 10, optimistic because tuned on them): 7 correct, 3 partial, 0 wrong, 0 hallucinated; p50 2.7 s, p95 3.1 s. Grades: eval/results/live-lite-prompt-v2.grades.md.
+- End to end on the VVD with the live backend works (2 questions, 2.5 s and 2.9 s server-side, answers shown on the card).
+- Known weaknesses for Phase 3: speaker misattribution from unlabeled subtitles; subtitle text answered as if it were on-screen text; terse answers on identity questions.
+- Phase 2 gate: criteria met under provisional grading; waiting for the owner's GO before tagging phase-2-done / starting Phase 3.

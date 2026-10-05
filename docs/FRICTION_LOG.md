@@ -102,3 +102,8 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Task:** write the least-privilege policy for Converse.
 - **Actual:** the policy editor reports "The action bedrock:Converse does not exist"; the Converse API is authorized by `bedrock:InvokeModel`. Easy to get wrong because the API name suggests a matching action.
 - **Severity:** low. **Suggestion:** note the mapping on the Converse API reference page.
+
+## 14. Vega Virtual Device does not survive the Mac sleeping/restarting; `run-app` error is opaque
+- **Task:** relaunch the app on the VVD the next day.
+- **Actual:** `vega device list` printed "No devices found" and `run-app` said it could not find 'VirtualDevice' (that message is clear), but nothing in the earlier session warned that the VVD had stopped; restarting needed another `vega virtual-device start`.
+- **Severity:** low. **Workaround:** restart the VVD (about one minute when it works). **Suggestion:** a `vega virtual-device status` command and auto-start on `run-app`.

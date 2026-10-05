@@ -30,6 +30,11 @@ test('parseAnswer trims, strips markdown and keeps two sentences', () => {
   assert.equal(parseAnswer('"A sign reads OPEN."'), 'A sign reads OPEN.');
 });
 
+test('parseAnswer strips an "Answer:" label', () => {
+  assert.equal(parseAnswer('Answer: A man and a woman.'), 'A man and a woman.');
+  assert.equal(parseAnswer('answer:  Two figures.'), 'Two figures.');
+});
+
 test('parseAnswer maps empty output to not sure', () => {
   assert.equal(parseAnswer(''), NOT_SURE);
   assert.equal(parseAnswer(undefined), NOT_SURE);

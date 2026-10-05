@@ -6,6 +6,7 @@ export const parseAnswer = (raw: string | undefined | null): string => {
     .replace(/[*_`#>]+/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+    .replace(/^(answer|response)\s*:\s*/i, '')
     .replace(/^["“](.*)["”]$/, '$1')
     .trim();
   if (!text) {

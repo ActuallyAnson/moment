@@ -20,3 +20,4 @@
 | 2026-10-04 | Prompt says: name people only if subtitles name them; never identify real faces | Nova docs say it refuses to identify individuals | None |
 | 2026-10-05 | Installed `@aws-sdk/client-bedrock-runtime` in backend (14 MB node_modules) | Needed for the live Bedrock call; user pre-approved the Bedrock integration | Raw SigV4 over fetch (more code, no benefit) |
 | 2026-10-05 | AWS profile `moment` (IAM user `moment-dev`, InvokeModel + list actions only), region us-east-1 | Least privilege; key stored only in ~/.aws | Console session login, Bedrock API key |
+| 2026-10-05 | System prompt v2: describe what frames show, narrate action oldest->newest for "what happened", say "I'm not sure" only when the answer is not in any frame, no "Answer:" label; parser also strips the label | v1 over-refused on 3/10 questions the frames clearly answer | Switch to Nova Pro (not tried yet) |
