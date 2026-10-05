@@ -1,0 +1,21 @@
+{
+  "config": "c4-f5-subs",
+  "cfg": {
+    "model": "amazon.nova-lite-v1:0",
+    "region": "us-east-1",
+    "maxFrames": 5,
+    "lookbackSec": 4,
+    "cueRadiusSec": 10,
+    "temperature": 0,
+    "maxTokens": 120,
+    "description": "5 frames over the last 4 s + subtitles within 10 s (Phase 2 default)"
+  },
+  "configHash": "2d58aecf8c66",
+  "promptVersion": "v2",
+  "gitSha": "873b2ec",
+  "date": "2026-10-05T06:27:23.733Z",
+  "command": "node backend/scripts/run.ts c4-f5-subs --split test",
+  "questions": 35,
+  "repeat": 1,
+  "stub": false
+}

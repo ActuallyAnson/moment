@@ -9,7 +9,8 @@ export type WindowConfig = {
   cueAheadSec?: number; // how far past T to look (default: same as cueRadiusSec); 0 = never use future dialogue
 };
 
-export const DEFAULT_WINDOW: WindowConfig = {lookbackSec: 4, maxFrames: 5, cueRadiusSec: 10};
+// Chosen by the Phase 3 eval (config c7-v3): 5 frames over the last 4 s, dialogue from the last 10 s only (never future dialogue).
+export const DEFAULT_WINDOW: WindowConfig = {lookbackSec: 4, maxFrames: 5, cueRadiusSec: 10, cueAheadSec: 0};
 
 // Frames in the lookback window, thinned to at most maxFrames evenly spaced, always
 // keeping the newest. If the window is empty (e.g. T near 0), fall back to the nearest

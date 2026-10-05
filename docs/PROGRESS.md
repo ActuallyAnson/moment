@@ -50,3 +50,15 @@
 - Dev split (15 questions) run live on all 7 configs (c4 twice): 143 live calls so far, $0.078 total. Noise floor: 2/15 answers differ between two identical c4 runs at temperature 0 (minor wording).
 - Prompt v3 + routing were designed before seeing dev results (fixes for the known weaknesses); c7-v3 is evaluated on dev like the others. Test split (35) untouched.
 - Waiting for the owner to grade the 64 distinct dev answers (eval/grading/grade.html), then `node backend/scripts/grade-import.ts <grades.csv>` and `node backend/scripts/summarize.ts eval/results/c*__2026-10-05__*`.
+
+## 2026-10-05 (Phase 3 done)
+- Test split (35 questions, run once per finalist; assistant-graded against owner-confirmed expected answers):
+  c4 (old default) 61% / halluc 3% / not-visible abstention 82% / p95 4.1 s; **c7-v3 73% / 3% / 91% / p95 3.2 s**; c8-v3-w8 69% / 0% / 91% / 3.7 s; c6-pro 69% / 3% / 82% / 5.0 s, $0.0039 per question (13x), 1 of 35 requests throttled by Bedrock (error, ungraded).
+- Dev split (15 questions, used to design v3, so optimistic): c1-f1 57%, c2-f3 67%, c3-f5 70%, c4 73%, c5-w8 83%, c6-pro 80%, c7-v3 87%, c8-v3-w8 77%.
+- Noise floor: 2/15 answers differ between two identical c4 runs at temperature 0. Differences of 1-2 questions per category are noise; the c7-vs-c4 paired result (5-0-30) is the one clear signal.
+- Default switched to c7-v3 in the backend (DEFAULT_WINDOW, DEFAULT_PROMPT_VERSION, routing). Live smoke test fixed the Phase 2 failure cases.
+- Grading: all 165 distinct answers were graded by the assistant, labelled `assistant-graded` in eval/grades/manual.csv. An owner spot-check of 15 answers (eval/grading/recheck.html, grades hidden) is still pending; the agreement rate must be reported with the results.
+- Known issues: action questions are weakest; "What does the text say?" can return text shown a few seconds earlier inside the window (my question tt14 expected "not sure"; graded partial); counting across a 4 s window can count people from earlier frames; Nova Pro throttles under sequential load.
+- Total live spend: about $0.28 over about 330 calls (eval/cost_log.csv).
+- Reproduce: `AWS_PROFILE=moment AWS_REGION=us-east-1 node backend/scripts/run.ts <config> --split test`, grade, `node backend/scripts/summarize.ts <runDirs>`. Results: eval/results/summary-dev.md, summary-test.md.
+- Process note: the first test run overwrote some dev result folders because the split was not in the folder name; dev results were restored from git (c8's dev run re-run) and run.ts now includes the split and refuses to overwrite.

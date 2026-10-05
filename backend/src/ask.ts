@@ -41,6 +41,7 @@ export type AskResponse = {
 };
 
 export const TEXT_PRESET = 'What does the text say?';
+export const DEFAULT_PROMPT_VERSION: PromptVersion = 'v3'; // chosen by the Phase 3 eval
 
 export const configHash = (cfg: WindowConfig, model: string, version: PromptVersion = 'v2', routed = false): string =>
   createHash('sha256').update(JSON.stringify({cfg, model, version, routed, system: version === 'v3' ? SYSTEM_PROMPT_V3 : SYSTEM_PROMPT, v: PROMPT_VERSION})).digest('hex').slice(0, 12);
@@ -66,16 +67,16 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
 
   const cfg = deps.window ?? DEFAULT_WINDOW;
   const frames = selectFrames(clip.index.frames, t, cfg);
-  const routedAway = deps.routeTextPreset === true && question.trim() === TEXT_PRESET;
+  const routedAway = (deps.routeTextPreset ?? true) && question.trim() === TEXT_PRESET;
   const cues = routedAway ? [] : selectCues(clip.cues, t, cfg.cueRadiusSec, cfg.cueAheadSec ?? cfg.cueRadiusSec);
-  const version = deps.promptVersion ?? 'v2';
+  const version = deps.promptVersion ?? DEFAULT_PROMPT_VERSION;
 
   const key = cacheKey({
     clipId,
     framePaths: frames.map((f) => f.path),
     cueTexts: cues.map((c) => c.text),
     question,
-    configHash: configHash(cfg, deps.client.mode === 'live' ? 'live' : 'stub', version, deps.routeTextPreset === true),
+    configHash: configHash(cfg, deps.client.mode === 'live' ? 'live' : 'stub', version, deps.routeTextPreset ?? true),
   });
   if (deps.cache && !deps.noCache) {
     const hit = deps.cache.get(key);

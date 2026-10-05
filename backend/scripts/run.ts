@@ -3,7 +3,7 @@
 // Output: eval/results/<config>__<date>__<hash>/{raw.jsonl,meta.json}
 import {execSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {handleAsk, configHash} from '../src/ask.ts';
 import {LiveClient, StubClient} from '../src/bedrock.ts';
 import {estimateCost} from '../src/cost.ts';
@@ -34,7 +34,11 @@ let questions = readFileSync('eval/questions.jsonl', 'utf8').trim().split('\n').
 questions = questions.filter((q) => (split === 'all' || q.split === split) && (!ids || ids.includes(q.id)) && (!clip || q.clipId === clip));
 
 const hash = createHash('sha256').update(cfgText + PROMPT_VERSION + SYSTEM_PROMPT + SYSTEM_PROMPT_V3).digest('hex').slice(0, 8);
-const dir = `eval/results/${name}__${new Date().toISOString().slice(0, 10)}__${hash}${stub ? '-stub' : ''}`;
+const dir = `eval/results/${name}__${split}__${new Date().toISOString().slice(0, 10)}__${hash}${stub ? '-stub' : ''}`;
+if (existsSync(dir)) {
+  console.error(`${dir} already exists; refusing to overwrite results (delete it or change the config)`);
+  process.exit(1);
+}
 mkdirSync(dir, {recursive: true});
 
 const rows: Record<string, unknown>[] = [];

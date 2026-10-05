@@ -1,0 +1,24 @@
+{
+  "config": "c8-v3-w8",
+  "cfg": {
+    "model": "amazon.nova-lite-v1:0",
+    "region": "us-east-1",
+    "maxFrames": 5,
+    "lookbackSec": 8,
+    "cueRadiusSec": 10,
+    "cueAheadSec": 0,
+    "subtitleMode": "routed",
+    "promptVersion": "v3",
+    "temperature": 0,
+    "maxTokens": 120,
+    "description": "c7 (prompt v3 + routing + no future dialogue) with an 8 s lookback; designed after seeing dev results for c5 and c7, before touching the test split"
+  },
+  "configHash": "bd11391c3cf1",
+  "promptVersion": "v3",
+  "gitSha": "873b2ec",
+  "date": "2026-10-05T06:33:34.263Z",
+  "command": "node backend/scripts/run.ts c8-v3-w8 --split dev",
+  "questions": 15,
+  "repeat": 1,
+  "stub": false
+}
