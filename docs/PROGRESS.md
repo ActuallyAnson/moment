@@ -31,3 +31,9 @@
 - AWS: account created (Free plan, $100 credits), IAM user `moment-dev`, CLI profile `moment` works (`sts get-caller-identity`), Nova Lite/Pro/2 Lite listed with image input in us-east-1.
 - First live call blocked: "account is currently being verified" (friction #12). No cost incurred, no live rows in cost_log.csv.
 - Next: retry live smoke test once verification finishes (`AWS_PROFILE=moment AWS_REGION=us-east-1 BEDROCK_MODE=live node backend/src/server.ts`), then run the 10 questions.
+
+## 2026-10-05 (Phase 2 live run)
+- AWS verification cleared; live Nova Lite works (us-east-1).
+- 10 confirmed questions, default config (5 frames / last 4 s + subtitles +/-10 s): 5 correct, 2 partial, 3 wrong, 0 hallucinated. p50 2.5 s, p95 2.9 s, ~$0.00023/question. Details: eval/results/live-lite-default.grades.md.
+- All 3 wrong answers are "I'm not sure" on things the frames show (over-cautious prompt); 2 answers carry a stray "Answer:" prefix.
+- Go/no-go: NOT decided; waiting on owner. Reproduce: `AWS_PROFILE=moment AWS_REGION=us-east-1 BEDROCK_MODE=live BEDROCK_MODEL_ID=amazon.nova-lite-v1:0 node backend/scripts/run-eval.ts <label>`.
