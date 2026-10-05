@@ -1,0 +1,10 @@
+{
+  "model": "amazon.nova-lite-v1:0",
+  "region": "us-east-1",
+  "maxFrames": 1,
+  "lookbackSec": 0,
+  "cueRadiusSec": 0,
+  "temperature": 0,
+  "maxTokens": 120,
+  "description": "1 frame at the timestamp, no subtitles"
+}

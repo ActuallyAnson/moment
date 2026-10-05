@@ -1,7 +1,8 @@
 import {createHash} from 'node:crypto';
 import {loadClip, readFrames} from './clips.ts';
 import {parseAnswer} from './answer.ts';
-import {buildPrompt, PROMPT_VERSION, SYSTEM_PROMPT} from './prompt.ts';
+import {buildPrompt, PROMPT_VERSION, SYSTEM_PROMPT, SYSTEM_PROMPT_V3} from './prompt.ts';
+import type {PromptVersion} from './prompt.ts';
 import {selectCues, selectFrames, DEFAULT_WINDOW} from './window.ts';
 import type {WindowConfig} from './window.ts';
 import type {VisionClient} from './bedrock.ts';
@@ -21,11 +22,14 @@ export type AskDeps = {
   allowOverBudget?: boolean;
   cache?: AnswerCache;
   retry?: RetryOptions;
+  promptVersion?: PromptVersion;
+  routeTextPreset?: boolean; // the 'What does the text say?' preset gets no dialogue at all
   noCache?: boolean; // the eval harness always bypasses the cache so latency numbers are real
 };
 
 export type AskResponse = {
   answer: string;
+  rawText?: string;
   latencyMs: number;
   framesUsed: number[];
   model: string;
@@ -36,8 +40,10 @@ export type AskResponse = {
   outputTokens?: number;
 };
 
-export const configHash = (cfg: WindowConfig, model: string): string =>
-  createHash('sha256').update(JSON.stringify({cfg, model, prompt: PROMPT_VERSION, system: SYSTEM_PROMPT})).digest('hex').slice(0, 12);
+export const TEXT_PRESET = 'What does the text say?';
+
+export const configHash = (cfg: WindowConfig, model: string, version: PromptVersion = 'v2', routed = false): string =>
+  createHash('sha256').update(JSON.stringify({cfg, model, version, routed, system: version === 'v3' ? SYSTEM_PROMPT_V3 : SYSTEM_PROMPT, v: PROMPT_VERSION})).digest('hex').slice(0, 12);
 
 // Accepts {clipId, timestamp, question}; also the Phase 1 shape {question, t}.
 export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string} = {}): Promise<AskResponse> => {
@@ -60,14 +66,16 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
 
   const cfg = deps.window ?? DEFAULT_WINDOW;
   const frames = selectFrames(clip.index.frames, t, cfg);
-  const cues = selectCues(clip.cues, t, cfg.cueRadiusSec);
+  const routedAway = deps.routeTextPreset === true && question.trim() === TEXT_PRESET;
+  const cues = routedAway ? [] : selectCues(clip.cues, t, cfg.cueRadiusSec, cfg.cueAheadSec ?? cfg.cueRadiusSec);
+  const version = deps.promptVersion ?? 'v2';
 
   const key = cacheKey({
     clipId,
     framePaths: frames.map((f) => f.path),
     cueTexts: cues.map((c) => c.text),
     question,
-    configHash: configHash(cfg, deps.client.mode === 'live' ? 'live' : 'stub'),
+    configHash: configHash(cfg, deps.client.mode === 'live' ? 'live' : 'stub', version, deps.routeTextPreset === true),
   });
   if (deps.cache && !deps.noCache) {
     const hit = deps.cache.get(key);
@@ -76,7 +84,7 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
     }
   }
 
-  const prompt = buildPrompt({question, t, frames, cues});
+  const prompt = buildPrompt({question, t, frames, cues}, version);
   const images = await readFrames(clip, frames);
 
   const before = deps.client.mode === 'live' ? await totalSpent(deps.costLogPath) : 0;
@@ -112,6 +120,7 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
 
   const out: AskResponse = {
     answer: parseAnswer(res.text),
+    rawText: res.text,
     latencyMs,
     framesUsed: frames.map((f) => f.t),
     model: res.model,

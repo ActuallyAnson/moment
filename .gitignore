@@ -13,3 +13,5 @@ app/assets/raw/clip.mp4
 eval/results/stub-*
 clips/.cache/
 eval/review.html
+eval/results/*-stub/
+eval/grading/grade.html

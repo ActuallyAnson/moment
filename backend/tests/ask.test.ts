@@ -75,3 +75,16 @@ test('cost arithmetic and thresholds', () => {
   assert.deepEqual(crossed(49, 131), [50, 100, 130]);
   assert.deepEqual(crossed(10, 20), []);
 });
+
+test('routed text preset gets no dialogue; ahead=0 drops future cues', async () => {
+  const f = await makeFixture();
+  const seen: string[] = [];
+  const spy = {mode: 'stub' as const, region: 'none', answer: async (r: {user: string}) => { seen.push(r.user); return {text: 'ok', inputTokens: 1, outputTokens: 1, model: 'stub'}; }};
+  const deps = {...f, client: spy, defaultClip: 'demo', promptVersion: 'v3' as const};
+  await handleAsk({question: 'What does the text say?', t: 5.5}, {...deps, routeTextPreset: true});
+  await handleAsk({question: 'What just happened?', t: 5.5}, {...deps, routeTextPreset: true});
+  await handleAsk({question: 'What just happened?', t: 4}, {...deps, window: {lookbackSec: 4, maxFrames: 5, cueRadiusSec: 10, cueAheadSec: 0}});
+  assert.match(seen[0], /No dialogue transcript is provided/);
+  assert.match(seen[1], /Hello there/);
+  assert.match(seen[2], /No dialogue transcript is provided/); // cue starts at 5 s, after the pause at 4 s
+});

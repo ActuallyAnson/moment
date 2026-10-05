@@ -46,3 +46,7 @@
 - 6 clips via `node backend/scripts/fetch-clips.ts` (manifest: clips/manifest.json), 50 confirmed questions (15 dev / 35 test; eval/questions.jsonl); review page `node backend/scripts/make-review-page.ts`.
 - Reliability done and tested: retry/timeout, request IDs, answer cache, error mapping (504/502/503), 34 backend tests. On the VVD: slow backend -> "Still thinking..." then "The answer took too long." + Try again; backend killed mid-request -> "Couldn't reach the answer service."; Back during loading resumes playback with no stale card.
 - Next: eval harness (configs, run, grading page, summary), prompt v3 on dev only, c1-c6 runs, owner grading, test split run, choose default.
+- Eval harness built and tested (42 backend tests): `node backend/scripts/run.ts <config> --split dev|test`, blind grading page `node backend/scripts/grade-page.ts <runDirs...>`, `grade-import.ts`, `summarize.ts`. Configs c1-f1, c2-f3, c3-f5, c4-f5-subs, c5-w8-subs, c6-pro, c7-v3 in eval/configs/.
+- Dev split (15 questions) run live on all 7 configs (c4 twice): 143 live calls so far, $0.078 total. Noise floor: 2/15 answers differ between two identical c4 runs at temperature 0 (minor wording).
+- Prompt v3 + routing were designed before seeing dev results (fixes for the known weaknesses); c7-v3 is evaluated on dev like the others. Test split (35) untouched.
+- Waiting for the owner to grade the 64 distinct dev answers (eval/grading/grade.html), then `node backend/scripts/grade-import.ts <grades.csv>` and `node backend/scripts/summarize.ts eval/results/c*__2026-10-05__*`.

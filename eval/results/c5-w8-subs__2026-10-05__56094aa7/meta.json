@@ -1,0 +1,21 @@
+{
+  "config": "c5-w8-subs",
+  "cfg": {
+    "model": "amazon.nova-lite-v1:0",
+    "region": "us-east-1",
+    "maxFrames": 5,
+    "lookbackSec": 8,
+    "cueRadiusSec": 10,
+    "temperature": 0,
+    "maxTokens": 120,
+    "description": "5 frames over the last 8 s + subtitles within 10 s"
+  },
+  "configHash": "489fa82801d0",
+  "promptVersion": "v2",
+  "gitSha": "0beee91",
+  "date": "2026-10-05T06:12:40.077Z",
+  "command": "node backend/scripts/run.ts c5-w8-subs --split dev",
+  "questions": 15,
+  "repeat": 1,
+  "stub": false
+}

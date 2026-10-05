@@ -6,6 +6,7 @@ export type WindowConfig = {
   lookbackSec: number; // frames from [T - lookbackSec, T]
   maxFrames: number;
   cueRadiusSec: number; // subtitles overlapping [T - r, T + r]; 0 disables subtitles
+  cueAheadSec?: number; // how far past T to look (default: same as cueRadiusSec); 0 = never use future dialogue
 };
 
 export const DEFAULT_WINDOW: WindowConfig = {lookbackSec: 4, maxFrames: 5, cueRadiusSec: 10};
@@ -37,5 +38,5 @@ export const selectFrames = (frames: Frame[], T: number, cfg: WindowConfig = DEF
   return picked;
 };
 
-export const selectCues = (cues: Cue[], T: number, radius: number): Cue[] =>
-  radius <= 0 ? [] : cues.filter((c) => c.end >= T - radius && c.start <= T + radius);
+export const selectCues = (cues: Cue[], T: number, radius: number, ahead: number = radius): Cue[] =>
+  radius <= 0 ? [] : cues.filter((c) => c.end >= T - radius && c.start <= T + ahead);

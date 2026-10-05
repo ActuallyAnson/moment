@@ -1,0 +1,21 @@
+{
+  "config": "c1-f1",
+  "cfg": {
+    "model": "amazon.nova-lite-v1:0",
+    "region": "us-east-1",
+    "maxFrames": 1,
+    "lookbackSec": 0,
+    "cueRadiusSec": 0,
+    "temperature": 0,
+    "maxTokens": 120,
+    "description": "1 frame at the timestamp, no subtitles"
+  },
+  "configHash": "4f85683e6f1d",
+  "promptVersion": "v2",
+  "gitSha": "0beee91",
+  "date": "2026-10-05T06:10:52.299Z",
+  "command": "node backend/scripts/run.ts c1-f1 --split dev",
+  "questions": 15,
+  "repeat": 1,
+  "stub": false
+}

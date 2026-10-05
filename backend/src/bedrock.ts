@@ -41,10 +41,12 @@ export class LiveClient implements VisionClient {
   readonly region: string;
   private modelId: string;
   private timeoutMs: number;
-  constructor(modelId: string, region: string, timeoutMs = 6000) {
+  private params: {temperature: number; maxTokens: number};
+  constructor(modelId: string, region: string, timeoutMs = 6000, params = {temperature: 0.2, maxTokens: 120}) {
     this.modelId = modelId;
     this.region = region;
     this.timeoutMs = timeoutMs;
+    this.params = params;
   }
   private client?: import('@aws-sdk/client-bedrock-runtime').BedrockRuntimeClient;
 
@@ -70,7 +72,7 @@ export class LiveClient implements VisionClient {
             ],
           },
         ],
-        inferenceConfig: {maxTokens: 120, temperature: 0.2},
+        inferenceConfig: {maxTokens: this.params.maxTokens, temperature: this.params.temperature},
       }),
       {abortSignal: opts?.signal ?? AbortSignal.timeout(this.timeoutMs)},
     );

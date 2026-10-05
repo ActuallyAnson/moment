@@ -40,3 +40,17 @@ test('parseAnswer maps empty output to not sure', () => {
   assert.equal(parseAnswer(undefined), NOT_SURE);
   assert.equal(parseAnswer('   '), NOT_SURE);
 });
+
+test('prompt v3 labels dialogue as audio, gives offsets and carries the new rules', async () => {
+  const {buildPrompt, SYSTEM_PROMPT_V3} = await import('../src/prompt.ts');
+  const p = buildPrompt(
+    {question: 'Who is on screen?', t: 20, frames: [{t: 19, path: 'a'}], cues: [{start: 10, end: 12, text: 'Hello'}, {start: 19, end: 22, text: 'Now'}]},
+    'v3',
+  );
+  assert.match(p.user, /Spoken dialogue \(audio transcript, NOT visible on screen; speakers are not labeled\)/);
+  assert.match(p.user, /\[8 s before the pause\] Hello/);
+  assert.match(p.user, /\[being spoken at the pause\] Now/);
+  assert.match(SYSTEM_PROMPT_V3, /Never quote dialogue as on-screen text/);
+  assert.match(SYSTEM_PROMPT_V3, /does not say who is speaking/);
+  assert.match(SYSTEM_PROMPT_V3, /left to right/);
+});
