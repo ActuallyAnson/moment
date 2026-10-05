@@ -18,3 +18,5 @@
 | 2026-10-04 | `@aws-sdk/client-bedrock-runtime` is NOT installed yet; LiveClient imports it lazily | Over the 1 MB dependency rule; ask when AWS exists | Install now |
 | 2026-10-04 | Only live calls are written to eval/cost_log.csv; stub calls are not | Stub rows would pollute the spend total | Log both |
 | 2026-10-04 | Prompt says: name people only if subtitles name them; never identify real faces | Nova docs say it refuses to identify individuals | None |
+| 2026-10-05 | Installed `@aws-sdk/client-bedrock-runtime` in backend (14 MB node_modules) | Needed for the live Bedrock call; user pre-approved the Bedrock integration | Raw SigV4 over fetch (more code, no benefit) |
+| 2026-10-05 | AWS profile `moment` (IAM user `moment-dev`, InvokeModel + list actions only), region us-east-1 | Least privilege; key stored only in ~/.aws | Console session login, Bedrock API key |

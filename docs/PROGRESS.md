@@ -25,3 +25,9 @@
 - eval/questions.jsonl: 10 drafted Q&A (2 each: action, identity, on-screen text, counting/spatial, not visible), all `confirmed: false`. YOU need to check each one against the clip. `node backend/scripts/run-eval.ts` runs them (stub plumbing check only).
 - BLOCKED until an AWS account exists: any real answer, accuracy, real latency, image-token cost, whether Nova refuses identity questions on live-action frames, model availability. NO-GO/GO is therefore undecided.
 - Next: AWS account -> CLI -> credentials -> `npm install @aws-sdk/client-bedrock-runtime` (ask first) -> BEDROCK_MODE=live smoke test (one text question, one identity question) -> run the 10 questions.
+
+## 2026-10-05
+- GitHub: private repo ActuallyAnson/moment created and pushed (main + phase tags).
+- AWS: account created (Free plan, $100 credits), IAM user `moment-dev`, CLI profile `moment` works (`sts get-caller-identity`), Nova Lite/Pro/2 Lite listed with image input in us-east-1.
+- First live call blocked: "account is currently being verified" (friction #12). No cost incurred, no live rows in cost_log.csv.
+- Next: retry live smoke test once verification finishes (`AWS_PROFILE=moment AWS_REGION=us-east-1 BEDROCK_MODE=live node backend/src/server.ts`), then run the 10 questions.

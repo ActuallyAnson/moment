@@ -88,3 +88,17 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Task:** drive the app without a mouse for repeatable tests.
 - **Actual:** `vega exec inputd-cli button_press KEY_MENU` fails with "No such file"; it works as `vega exec vda -s emulator-5554 shell "inputd-cli button_press KEY_MENU"` (inputd-cli lives on the device). `vda` itself is not on PATH after `source ~/vega/env`.
 - **Severity:** low. **Suggestion:** show the full command in the inputd-cli doc.
+
+## 12. New AWS account blocks Bedrock until "verification" completes (up to 2 h)
+- **Task:** first live Bedrock Converse call (Nova Lite) from a freshly created account on the Free plan.
+- **Steps:** create account, IAM user with `bedrock:InvokeModel`, `aws configure`, call Converse.
+- **Expected:** the call works (the IAM identity and `list-foundation-models` already worked).
+- **Actual:** `AccessDeniedException: Your account is currently being verified. Verification normally takes less than 2 hours.` Nothing in the console pointed to this beforehand.
+- **Severity:** medium (a surprise wait during a deadline-driven hackathon).
+- **Workaround:** wait, or contact AWS support after 2 hours.
+- **Suggestion:** show a verification-status banner in the console and in the Bedrock page; mention it in hackathon onboarding for credits.
+
+## 13. `bedrock:Converse` is not an IAM action
+- **Task:** write the least-privilege policy for Converse.
+- **Actual:** the policy editor reports "The action bedrock:Converse does not exist"; the Converse API is authorized by `bedrock:InvokeModel`. Easy to get wrong because the API name suggests a matching action.
+- **Severity:** low. **Suggestion:** note the mapping on the Converse API reference page.
