@@ -6,7 +6,10 @@ import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {parseCsv} from '../src/csv.ts';
 import {gradeKey} from '../src/evalstats.ts';
 
-const dirs = process.argv.slice(2);
+const argv = process.argv.slice(2);
+const onlyAt = argv.indexOf('--only');
+const onlyKeys = onlyAt >= 0 ? new Set(readFileSync(argv[onlyAt + 1], 'utf8').split('\n').filter(Boolean)) : null;
+const dirs = argv.filter((a, i) => !a.startsWith('--') && (onlyAt < 0 || i !== onlyAt + 1));
 if (!dirs.length) {
   console.error('usage: grade-page.ts <runDir> ...');
   process.exit(1);
@@ -25,7 +28,7 @@ for (const d of dirs) {
     }
     const key = gradeKey(r.id, r.answer);
     const q = questions.get(r.id) as Record<string, string | number>;
-    if (!done.has(key) && !items.has(key)) {
+    if ((onlyKeys ? onlyKeys.has(key) : !done.has(key)) && !items.has(key)) {
       items.set(key, {key, id: r.id, clip: q.clipId, t: q.timestamp, category: q.category, question: q.question, expected: q.expectedAnswer, acceptable: q.acceptable, answer: r.answer});
     }
   }
@@ -37,7 +40,7 @@ const list = [...items.values()].sort(() => rnd() - 0.5);
 
 mkdirSync('eval/grading', {recursive: true});
 const data = JSON.stringify(list).replace(/</g, '\\u003c');
-writeFileSync('eval/grading/grade.html', `<!doctype html><meta charset="utf-8"><title>Moment: grading</title>
+writeFileSync(onlyKeys ? 'eval/grading/recheck.html' : 'eval/grading/grade.html', `<!doctype html><meta charset="utf-8"><title>Moment: grading</title>
 <style>body{font:16px system-ui;margin:0}#top{position:sticky;top:0;background:#fff;border-bottom:1px solid #ccc;padding:8px 16px;z-index:5}
 #top video{height:200px;float:right;margin-left:16px}main{max-width:900px;margin:0 auto;padding:16px}
 .card{border:1px solid #ccc;border-radius:8px;padding:12px;margin:12px 0}.card.done{background:#eef9ee}.ans{font-size:20px;margin:8px 0;padding:8px;background:#f5f5f5}
@@ -49,7 +52,7 @@ For "not visible" questions, "I'm not sure" is correct.</p>
 <button onclick="dl()">Download grades.csv</button> <small>(progress is saved in this browser automatically)</small></div>
 <main id="m"></main>
 <script>
-const items=${data};const KEY='moment-grades-v1';let g={};try{g=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+const items=${data};const KEY='${onlyKeys ? 'moment-recheck-v1' : 'moment-grades-v1'}';let g={};try{g=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 const m=document.getElementById('m');
 const mm=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 function save(){try{localStorage.setItem(KEY,JSON.stringify(g))}catch(e){};prog()}
@@ -64,7 +67,7 @@ m.addEventListener('click',e=>{const b=e.target.closest('button[data-g]');if(!b)
 document.querySelectorAll('button[data-k="'+k+'"]').forEach(x=>x.classList.toggle('sel',x===b));document.getElementById('c_'+k).classList.add('done');save()});
 m.addEventListener('input',e=>{const k=e.target.dataset.n;if(k){g[k]={...(g[k]||{}),note:e.target.value};save()}});
 function dl(){const rows=['key,grade,note'];Object.entries(g).forEach(([k,v])=>{if(v.grade)rows.push([k,v.grade,'"'+(v.note||'').replace(/"/g,'""')+'"'].join(','))});
-const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\\n')+'\\n'],{type:'text/csv'}));a.download='grades.csv';a.click()}
+const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\\n')+'\\n'],{type:'text/csv'}));a.download='${onlyKeys ? 'recheck.csv' : 'grades.csv'}';a.click()}
 prog();
 </script>`);
-console.log(`eval/grading/grade.html: ${list.length} answers to grade (${done.size} already graded keys skipped)`);
+console.log(`${onlyKeys ? 'eval/grading/recheck.html' : 'eval/grading/grade.html'}: ${list.length} answers to grade (${done.size} already graded keys skipped)`);

@@ -15,3 +15,4 @@ clips/.cache/
 eval/review.html
 eval/results/*-stub/
 eval/grading/grade.html
+eval/grading/recheck.html
