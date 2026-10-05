@@ -1,10 +1,14 @@
+import {createHash} from 'node:crypto';
 import {loadClip, readFrames} from './clips.ts';
 import {parseAnswer} from './answer.ts';
-import {buildPrompt} from './prompt.ts';
+import {buildPrompt, PROMPT_VERSION, SYSTEM_PROMPT} from './prompt.ts';
 import {selectCues, selectFrames, DEFAULT_WINDOW} from './window.ts';
 import type {WindowConfig} from './window.ts';
 import type {VisionClient} from './bedrock.ts';
 import {crossed, estimateCost, HARD_STOP_USD, logCost, totalSpent} from './cost.ts';
+import {callWithRetry, DEFAULT_RETRY, UpstreamError} from './retry.ts';
+import type {RetryOptions} from './retry.ts';
+import {AnswerCache, cacheKey} from './cache.ts';
 
 export class AskInputError extends Error {}
 
@@ -15,12 +19,28 @@ export type AskDeps = {
   window?: WindowConfig;
   defaultClip?: string;
   allowOverBudget?: boolean;
+  cache?: AnswerCache;
+  retry?: RetryOptions;
+  noCache?: boolean; // the eval harness always bypasses the cache so latency numbers are real
 };
 
-export type AskResponse = {answer: string; latencyMs: number; framesUsed: number[]; model: string; t: number};
+export type AskResponse = {
+  answer: string;
+  latencyMs: number;
+  framesUsed: number[];
+  model: string;
+  t: number;
+  cached?: boolean;
+  attempts?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+};
+
+export const configHash = (cfg: WindowConfig, model: string): string =>
+  createHash('sha256').update(JSON.stringify({cfg, model, prompt: PROMPT_VERSION, system: SYSTEM_PROMPT})).digest('hex').slice(0, 12);
 
 // Accepts {clipId, timestamp, question}; also the Phase 1 shape {question, t}.
-export const handleAsk = async (body: unknown, deps: AskDeps): Promise<AskResponse> => {
+export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string} = {}): Promise<AskResponse> => {
   const b = (body ?? {}) as Record<string, unknown>;
   const question = b.question;
   const t = typeof b.timestamp === 'number' ? b.timestamp : b.t;
@@ -41,20 +61,40 @@ export const handleAsk = async (body: unknown, deps: AskDeps): Promise<AskRespon
   const cfg = deps.window ?? DEFAULT_WINDOW;
   const frames = selectFrames(clip.index.frames, t, cfg);
   const cues = selectCues(clip.cues, t, cfg.cueRadiusSec);
+
+  const key = cacheKey({
+    clipId,
+    framePaths: frames.map((f) => f.path),
+    cueTexts: cues.map((c) => c.text),
+    question,
+    configHash: configHash(cfg, deps.client.mode === 'live' ? 'live' : 'stub'),
+  });
+  if (deps.cache && !deps.noCache) {
+    const hit = deps.cache.get(key);
+    if (hit) {
+      return {...hit, cached: true, latencyMs: 0, t};
+    }
+  }
+
   const prompt = buildPrompt({question, t, frames, cues});
   const images = await readFrames(clip, frames);
 
   const before = deps.client.mode === 'live' ? await totalSpent(deps.costLogPath) : 0;
   if (before >= HARD_STOP_USD && !deps.allowOverBudget) {
-    throw new Error(`budget guard: $${before.toFixed(2)} spent, live calls disabled (set ALLOW_OVER_BUDGET=1 to override)`);
+    throw new UpstreamError(`budget guard: $${before.toFixed(2)} spent, live calls disabled`, 'budget', 0, false);
   }
 
   const started = performance.now();
-  const res = await deps.client.answer({system: prompt.system, user: prompt.user, images});
+  const {value: res, attempts} = await callWithRetry(
+    (signal) => deps.client.answer({system: prompt.system, user: prompt.user, images}, {signal}),
+    deps.retry ?? DEFAULT_RETRY,
+  );
   const latencyMs = Math.round(performance.now() - started);
 
+  let costUsd = 0;
   if (deps.client.mode === 'live') {
     const cost = estimateCost(res.model, deps.client.region, res.inputTokens, res.outputTokens);
+    costUsd = cost ?? 0;
     await logCost(deps.costLogPath, {
       date: new Date().toISOString(),
       model: res.model,
@@ -62,13 +102,26 @@ export const handleAsk = async (body: unknown, deps: AskDeps): Promise<AskRespon
       images: images.length,
       inputTokens: res.inputTokens,
       outputTokens: res.outputTokens,
-      estCostUsd: cost ?? 0,
-      note: cost === null ? 'price unknown' : `${clipId}@${t.toFixed(1)}`,
+      estCostUsd: costUsd,
+      note: `${ctx.rid ?? '-'} ${clipId}@${t.toFixed(1)} attempts=${attempts}${cost === null ? ' price-unknown' : ''}`,
     });
-    for (const level of crossed(before, before + (cost ?? 0))) {
+    for (const level of crossed(before, before + costUsd)) {
       console.warn(`BUDGET WARNING: cumulative live cost crossed $${level}`);
     }
   }
 
-  return {answer: parseAnswer(res.text), latencyMs, framesUsed: frames.map((f) => f.t), model: res.model, t};
+  const out: AskResponse = {
+    answer: parseAnswer(res.text),
+    latencyMs,
+    framesUsed: frames.map((f) => f.t),
+    model: res.model,
+    t,
+    attempts,
+    inputTokens: res.inputTokens,
+    outputTokens: res.outputTokens,
+  };
+  if (deps.cache && !deps.noCache) {
+    deps.cache.set(key, out);
+  }
+  return out;
 };

@@ -23,16 +23,33 @@ const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
 
 export const ask = async (question: string, t: number): Promise<AskResult> => {
   try {
+    const requestId = `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     const res = await withTimeout(
       fetch(`${API_BASE}/ask`, {
         method: 'POST',
-        headers: {'content-type': 'application/json'},
+        headers: {'content-type': 'application/json', 'x-request-id': requestId},
         body: JSON.stringify({clipId: CLIP_ID, timestamp: t, question}),
       }),
       REQUEST_TIMEOUT_MS,
     );
     if (!res.ok) {
-      throw new AskError(`The server returned an error (${res.status}).`);
+      let kind = '';
+      try {
+        kind = ((await res.json()) as {error?: string}).error ?? '';
+      } catch {
+        // body was not JSON
+      }
+      console.log(`[moment] ask failed ${requestId} status=${res.status} error=${kind}`);
+      if (kind === 'timeout') {
+        throw new AskError('The answer took too long.');
+      }
+      if (kind === 'budget') {
+        throw new AskError('Answers are paused right now.');
+      }
+      if (res.status === 400) {
+        throw new AskError("That question couldn't be sent.");
+      }
+      throw new AskError('The answer service had a problem.');
     }
     return (await res.json()) as AskResult;
   } catch (e) {

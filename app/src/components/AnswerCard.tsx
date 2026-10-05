@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {formatTime} from '../format';
@@ -11,7 +11,17 @@ type Props = {
   onDismiss: () => void;
 };
 
-export const AnswerCard = ({state, onRetry, onDismiss}: Props) => (
+export const AnswerCard = ({state, onRetry, onDismiss}: Props) => {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    setSlow(false);
+    if (state.phase !== 'loading') {
+      return undefined;
+    }
+    const timer = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(timer);
+  }, [state.phase]);
+  return (
   <TVFocusGuideView
     autoFocus
     trapFocusUp
@@ -22,7 +32,9 @@ export const AnswerCard = ({state, onRetry, onDismiss}: Props) => (
     <Text style={styles.question}>
       {state.question} · {formatTime(state.t)}
     </Text>
-    {state.phase === 'loading' && <Text style={styles.answer}>Looking at the scene…</Text>}
+    {state.phase === 'loading' && (
+      <Text style={styles.answer}>{slow ? 'Still thinking…' : 'Looking at the scene…'}</Text>
+    )}
     {state.phase === 'answer' && <Text style={styles.answer}>{state.answer}</Text>}
     {state.phase === 'error' && (
       <View>
@@ -35,7 +47,8 @@ export const AnswerCard = ({state, onRetry, onDismiss}: Props) => (
     )}
     {state.phase !== 'error' && <Text style={styles.hint}>Press Back to resume</Text>}
   </TVFocusGuideView>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {

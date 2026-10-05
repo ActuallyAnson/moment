@@ -41,3 +41,8 @@
 - End to end on the VVD with the live backend works (2 questions, 2.5 s and 2.9 s server-side, answers shown on the card).
 - Known weaknesses for Phase 3: speaker misattribution from unlabeled subtitles; subtitle text answered as if it were on-screen text; terse answers on identity questions.
 - Phase 2 gate: criteria met under provisional grading; waiting for the owner's GO before tagging phase-2-done / starting Phase 3.
+
+## 2026-10-05 (Phase 3 in progress)
+- 6 clips via `node backend/scripts/fetch-clips.ts` (manifest: clips/manifest.json), 50 confirmed questions (15 dev / 35 test; eval/questions.jsonl); review page `node backend/scripts/make-review-page.ts`.
+- Reliability done and tested: retry/timeout, request IDs, answer cache, error mapping (504/502/503), 34 backend tests. On the VVD: slow backend -> "Still thinking..." then "The answer took too long." + Try again; backend killed mid-request -> "Couldn't reach the answer service."; Back during loading resumes playback with no stale card.
+- Next: eval harness (configs, run, grading page, summary), prompt v3 on dev only, c1-c6 runs, owner grading, test split run, choose default.

@@ -1,7 +1,10 @@
 import {createServer} from 'node:http';
 import type {IncomingMessage, ServerResponse} from 'node:http';
 import {fileURLToPath} from 'node:url';
+import {randomUUID} from 'node:crypto';
 import {AskInputError, handleAsk} from './ask.ts';
+import {AnswerCache} from './cache.ts';
+import {UpstreamError} from './retry.ts';
 import {makeClient} from './bedrock.ts';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -13,6 +16,7 @@ const deps = {
   costLogPath: process.env.COST_LOG ?? `${ROOT}eval/cost_log.csv`,
   defaultClip: process.env.DEFAULT_CLIP ?? 'tos',
   allowOverBudget: process.env.ALLOW_OVER_BUDGET === '1',
+  cache: new AnswerCache(500, process.env.CACHE_FILE),
 };
 
 const send = (res: ServerResponse, status: number, body: unknown) => {
@@ -33,32 +37,43 @@ const readJson = (req: IncomingMessage): Promise<unknown> =>
     });
   });
 
-let nextId = 0;
+const log = (o: Record<string, unknown>) => console.log(JSON.stringify({ts: new Date().toISOString(), ...o}));
+
 const server = createServer(async (req, res) => {
-  const rid = ++nextId;
+  const incoming = req.headers['x-request-id'];
+  const rid = (typeof incoming === 'string' && /^[\w-]{1,64}$/.test(incoming) ? incoming : randomUUID().slice(0, 8));
   const started = Date.now();
-  res.on('finish', () => console.log(`#${rid} ${req.method} ${req.url} -> ${res.statusCode} ${Date.now() - started}ms`));
+  res.setHeader('x-request-id', rid);
+  const reply = (status: number, body: Record<string, unknown>, extra: Record<string, unknown> = {}) => {
+    log({rid, method: req.method, url: req.url, status, ms: Date.now() - started, ...extra});
+    return send(res, status, {...body, requestId: rid});
+  };
   if (req.method === 'GET' && req.url === '/health') {
-    return send(res, 200, {ok: true, mode: client.mode});
+    return reply(200, {ok: true, mode: client.mode, cacheSize: deps.cache.size});
   }
   if (req.method === 'POST' && req.url === '/ask') {
     let body: unknown;
     try {
       body = await readJson(req);
     } catch {
-      return send(res, 400, {error: 'invalid JSON'});
+      return reply(400, {error: 'invalid JSON'});
     }
     try {
-      return send(res, 200, await handleAsk(body, deps));
+      const result = await handleAsk(body, deps, {rid});
+      return reply(200, result, {cached: result.cached ?? false, attempts: result.attempts ?? 0, clip: (body as {clipId?: string}).clipId, t: result.t});
     } catch (e) {
       if (e instanceof AskInputError) {
-        return send(res, 400, {error: e.message});
+        return reply(400, {error: e.message});
       }
-      console.error(`#${rid} ask failed:`, e);
-      return send(res, 502, {error: 'answer service failed'});
+      if (e instanceof UpstreamError) {
+        const status = e.kind === 'timeout' ? 504 : e.kind === 'budget' ? 503 : 502;
+        return reply(status, {error: e.kind, retryable: e.retryable}, {attempts: e.attempts, detail: e.message});
+      }
+      console.error(`${rid} ask failed:`, e);
+      return reply(502, {error: 'upstream', retryable: false});
     }
   }
-  send(res, 404, {error: 'not found'});
+  reply(404, {error: 'not found'});
 });
 
 server.listen(PORT, '127.0.0.1', () => console.log(`moment backend (${client.mode}) on http://127.0.0.1:${PORT}`));

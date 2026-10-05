@@ -107,3 +107,8 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Task:** relaunch the app on the VVD the next day.
 - **Actual:** `vega device list` printed "No devices found" and `run-app` said it could not find 'VirtualDevice' (that message is clear), but nothing in the earlier session warned that the VVD had stopped; restarting needed another `vega virtual-device start`.
 - **Severity:** low. **Workaround:** restart the VVD (about one minute when it works). **Suggestion:** a `vega virtual-device status` command and auto-start on `run-app`.
+
+## 15. Bedrock SDK retries and abort signals need care to bound latency
+- **Task:** keep the end-to-end time under the app's timeout with one retry.
+- **Actual:** the AWS SDK retries on its own (default 3 attempts) with no total deadline, so a stuck call can exceed any UI timeout. We set `maxAttempts: 1`, pass an `AbortSignal` per attempt and wrap the call in our own race; the SDK's abort behavior is only verified through fake clients in tests, not against a real hung connection.
+- **Severity:** low. **Suggestion:** document a recommended pattern for a total deadline across retries for interactive use cases.

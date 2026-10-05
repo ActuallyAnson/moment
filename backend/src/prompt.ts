@@ -1,6 +1,8 @@
 import type {Cue} from './srt.ts';
 import type {Frame} from './window.ts';
 
+export const PROMPT_VERSION = 'v2';
+
 export const SYSTEM_PROMPT = [
   'You are a viewing companion on a TV. A viewer paused a video and asks about the current moment.',
   'You see up to a few frames leading up to the paused moment (oldest first) and nearby subtitles.',

@@ -4,7 +4,7 @@ export type VisionResult = {text: string; inputTokens: number; outputTokens: num
 export interface VisionClient {
   readonly mode: 'stub' | 'live';
   readonly region: string;
-  answer(req: VisionRequest): Promise<VisionResult>;
+  answer(req: VisionRequest, opts?: {signal?: AbortSignal}): Promise<VisionResult>;
 }
 
 // Rough token estimate until the first live call calibrates it (UNVERIFIED: ~800 tokens/image).
@@ -17,8 +17,14 @@ export class StubClient implements VisionClient {
   constructor(delayMs = 800) {
     this.delayMs = delayMs;
   }
-  async answer(req: VisionRequest): Promise<VisionResult> {
-    await new Promise((r) => setTimeout(r, this.delayMs));
+  async answer(req: VisionRequest, opts?: {signal?: AbortSignal}): Promise<VisionResult> {
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, this.delayMs);
+      opts?.signal?.addEventListener('abort', () => {
+        clearTimeout(timer);
+        reject(opts.signal?.reason);
+      }, {once: true});
+    });
     return {
       text: `Stub answer: no model was called (${req.images.length} frames selected).`,
       inputTokens: req.images.length * TOKENS_PER_IMAGE + Math.ceil((req.system.length + req.user.length) / 4),
@@ -40,15 +46,18 @@ export class LiveClient implements VisionClient {
     this.region = region;
     this.timeoutMs = timeoutMs;
   }
-  async answer(req: VisionRequest): Promise<VisionResult> {
+  private client?: import('@aws-sdk/client-bedrock-runtime').BedrockRuntimeClient;
+
+  async answer(req: VisionRequest, opts?: {signal?: AbortSignal}): Promise<VisionResult> {
     let sdk: typeof import('@aws-sdk/client-bedrock-runtime');
     try {
       sdk = await import('@aws-sdk/client-bedrock-runtime');
     } catch {
       throw new Error('BEDROCK_MODE=live needs: cd backend && npm install @aws-sdk/client-bedrock-runtime');
     }
-    const client = new sdk.BedrockRuntimeClient({region: this.region});
-    const res = await client.send(
+    // One reused client (warm TLS connection); retries are handled by callWithRetry, not the SDK.
+    this.client ??= new sdk.BedrockRuntimeClient({region: this.region, maxAttempts: 1});
+    const res = await this.client.send(
       new sdk.ConverseCommand({
         modelId: this.modelId,
         system: [{text: req.system}],
@@ -63,7 +72,7 @@ export class LiveClient implements VisionClient {
         ],
         inferenceConfig: {maxTokens: 120, temperature: 0.2},
       }),
-      {abortSignal: AbortSignal.timeout(this.timeoutMs)},
+      {abortSignal: opts?.signal ?? AbortSignal.timeout(this.timeoutMs)},
     );
     const text = res.output?.message?.content?.map((c) => c.text ?? '').join(' ') ?? '';
     return {
