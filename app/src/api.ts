@@ -1,6 +1,6 @@
 import {API_BASE, REQUEST_TIMEOUT_MS} from './config';
 
-export type AskResult = {answer: string; t: number; latencyMs?: number; framesUsed?: number[]; model?: string};
+export type AskResult = {answer: string; t: number; latencyMs?: number; framesUsed?: number[]; cuesUsed?: number; model?: string};
 
 const CLIP_ID = 'tos';
 

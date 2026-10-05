@@ -112,3 +112,19 @@ Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
 - **Task:** keep the end-to-end time under the app's timeout with one retry.
 - **Actual:** the AWS SDK retries on its own (default 3 attempts) with no total deadline, so a stuck call can exceed any UI timeout. We set `maxAttempts: 1`, pass an `AbortSignal` per attempt and wrap the call in our own race; the SDK's abort behavior is only verified through fake clients in tests, not against a real hung connection.
 - **Severity:** low. **Suggestion:** document a recommended pattern for a total deadline across retries for interactive use cases.
+
+## 16. Layout canvas is 960x540 dp, not 1920x1080 px (easy to size everything 2x too big)
+- **Task:** size TV UI for 10-foot viewing.
+- **Actual:** `Dimensions.get('window')` on the VVD returns {width: 960, height: 540, scale: 2}. Written for 1080p pixels, my first panel (860 wide, 46 px text) covered about 90% of the screen. The Fire TV design guidance is written in 1080p pixels, so the two conventions are easy to mix up.
+- **Severity:** medium. **Workaround:** a `px()` helper that scales from a 1920 reference. **Suggestion:** state the dp canvas and the conversion next to the typography and safe-area guidance in the Vega UX docs.
+
+## 17. Remote key event names differ from what the docs list
+- **Task:** close the overlay when the viewer presses Play/Pause.
+- **Actual:** `useTVEventHandler` reports `play` for the VVD's Play/Pause key (with `rewind`, `forward`); the docs list `playpause`/`skip_*`. Found with an on-screen key logger.
+- **Severity:** low. **Workaround:** accept `play`, `pause` and `playpause`. **Suggestion:** document the event names the VVD actually emits per key.
+
+## 18. VoiceView on the VVD: enabling works only via a key gesture; a system dialog then traps injected keys
+- **Task:** verify screen-reader behavior of the overlay and answer card.
+- **Steps:** `vdcm set ".../VoiceViewEnabled" "ENABLED"` fails with "No permission for operation". Holding Back + Menu for 3 s (via `inputd-cli`) does enable it (`vdcm get` then shows ENABLED). Holding Fast-forward + Rewind for 3 s turns on the Text Banner, which shows the text that would be spoken (very useful, no audio needed), but its explanatory dialog then ignored injected Enter/Right/Down presses (even a double Enter), so I could not dismiss it from the command line. Toggling VoiceView off (same gesture) and relaunching the app fixed it; the Text Banner setting persisted separately and kept working.
+- **Not verified:** actual speech/audio on the VVD, and whether VoiceView intercepts the Menu key (Menu still opened the panel in the VVD with the banner on).
+- **Severity:** medium for accessibility testing. **Suggestion:** allow `vdcm set` for accessibility settings on the VVD, make the Text Banner dialog respond to injected keys, and document the Text Banner as a way to verify spoken output.

@@ -32,6 +32,7 @@ export type AskResponse = {
   rawText?: string;
   latencyMs: number;
   framesUsed: number[];
+  cuesUsed?: number;
   model: string;
   t: number;
   cached?: boolean;
@@ -124,6 +125,7 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
     rawText: res.text,
     latencyMs,
     framesUsed: frames.map((f) => f.t),
+    cuesUsed: cues.length,
     model: res.model,
     t,
     attempts,
