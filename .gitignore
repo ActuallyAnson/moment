@@ -1,8 +1,6 @@
 node_modules/
 .env
 .env.*
-literal:.local-tool-cache/
-literal:LOCAL-NOTES.md
 build/
 *.vpkg
 .DS_Store
@@ -16,3 +14,4 @@ eval/review.html
 eval/results/*-stub/
 eval/grading/grade.html
 eval/grading/recheck.html
+app/buildinfo.json

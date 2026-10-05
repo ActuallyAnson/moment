@@ -1,13 +1,87 @@
 # Moment
 
-AI-enhanced viewing for Fire TV: while a video plays, press a button and ask about the current moment ("What just happened?", "Who is on screen?", "What does the text say?") and get a short answer on screen.
+**Pause your TV and ask what just happened.** Moment is a Fire TV app (Vega OS) where you press **Menu** while a video plays, the video pauses, and you pick a question about the current moment: "What just happened?", "Who is on screen?", "What does the text say?", "What should I notice here?". A short answer appears on screen, based on the last few seconds of video and the dialogue around that moment, with an honest "I'm not sure" when the frames don't show it.
 
-Status: work in progress (Phase 1: remote loop with a stubbed answer).
+![Moment on the Vega Virtual Device](docs/img/moment-demo.gif)
 
-## Run (Mac, Apple Silicon)
-1. Install the Vega SDK (https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html) and start the virtual device: `vega virtual-device start`.
-2. Backend (stub): `cd backend && npm start` (listens on 127.0.0.1:8787; the virtual device reaches it at 10.0.2.2:8787).
-3. App: `cd app && npm install && npm run build:app && vega run-app build/aarch64-release/moment_aarch64.vpkg com.anson.moment.main -d VirtualDevice`.
-4. Press Menu (F2 in the virtual device window) to ask a question; Back resumes playback.
+| Ask | Answer |
+|---|---|
+| ![Question panel](docs/img/overlay.png) | ![Answer card](docs/img/answer.png) |
 
-See `docs/` for progress, decisions and the friction log. License: MIT.
+Moment is **AI-enhanced viewing**: useful when you looked away, are multitasking, or can't read small on-screen text. It has screen-reader labels, but it has **not** been tested with blind or low-vision viewers, and we make no claim that it is built for them.
+
+Built for the Amazon Developer Hackathon (Fire TV track, AWS Builder mini challenge). Inference runs in the cloud (Amazon Bedrock), not on the TV.
+
+## How it works
+
+```
+Fire TV app (Vega OS, React Native 0.83) on the Vega Virtual Device
+  Menu -> read currentTime -> pause -> POST /ask {clipId, timestamp, question}
+        |  http://10.0.2.2:8787   (the emulator's address for the host Mac)
+Node backend (127.0.0.1:8787, TypeScript, Node 24)
+  window: 5 frames from the last 4 s  +  dialogue from the last 10 s (never future dialogue)
+  prompt v3 -> answer cache -> retry (4 s + 3 s attempts) -> cost guard ($130 hard stop)
+        |  Converse API (AWS SDK for JavaScript v3)
+Amazon Bedrock, us-east-1, amazon.nova-lite-v1:0 (image + text in, text out)
+
+Offline: ffmpeg -> clips/<id>/{clip.mp4, frames/*.jpg (2 fps, 512 px wide), index.json, subs.srt}
+```
+
+The technical core is **temporal context selection**: which frames and which subtitle lines to send for a given pause, chosen by an evaluation harness rather than by guesswork (see Evaluation).
+
+## Quick start (macOS, Apple Silicon)
+
+Tested on macOS 27, Node 24.4.1 and Vega SDK 0.24.12112. Stub mode needs no AWS account.
+
+1. **Tools.** `softwareupdate --install-rosetta --agree-to-license`, then `brew install node ffmpeg watchman`. Keep the project **outside** Documents/Desktop/Downloads, or allow the macOS prompt for watchman, otherwise the app build can hang silently (friction log #6).
+2. **Vega SDK and emulator.** Install the SDK from https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html (close VS Code first; run the installer in a normal terminal window), then `source ~/vega/env` and `vega virtual-device start --timeout 600`.
+3. **Clips.** From the repo root: `node backend/scripts/fetch-clips.ts` (downloads and cuts the six excerpts; needs network), then `node backend/scripts/prepare-app-clip.ts tos` (bundles one clip into the app).
+4. **Backend, stub mode (no AWS).** `cd backend && npm install && npm start`; check `curl 127.0.0.1:8787/health`. Answers in stub mode are placeholders.
+5. **Backend, live mode.** Configure an AWS profile with `bedrock:InvokeModel` only (never commit credentials), then `AWS_PROFILE=<profile> AWS_REGION=us-east-1 BEDROCK_MODE=live npm start`. A brand-new AWS account can be blocked from Bedrock for up to 2 hours (friction log #12). Every live call is logged to `eval/cost_log.csv` and refused above $130.
+6. **App.** `cd app && npm install && npm run build:app && vega run-app build/aarch64-release/moment-app_aarch64.vpkg com.anson.moment.main -d VirtualDevice`.
+7. **Use it.** In the emulator window the keyboard is the remote: **F2 = Menu** (or Enter = Select) opens the panel, arrows move, **Enter** picks, **Esc = Back** resumes, **F4 = Play/Pause**. In macOS System Settings > Keyboard, turn on "Use F1, F2, etc. keys as standard function keys".
+
+To play a different bundled clip: `node backend/scripts/prepare-app-clip.ts sintel` and rebuild the app (clip ids: tos, sintel, bbb, spring, llama, marketst).
+
+## Evaluation
+
+We compared context configurations on 50 questions over six clips (15 "dev" questions used to design the prompt, 35 "test" questions run once per finalist). Questions cover action, identity/appearance, on-screen text, counting/spatial and "not visible" (where "I'm not sure" is the right answer).
+
+**Test split (35 questions), `eval/results/summary-test.md`:**
+
+| Config | Accuracy | Hallucinated | Honest abstention on "not visible" | p50 / p95 latency | Cost per question |
+|---|---|---|---|---|---|
+| **c7-v3 (default)** | **73%** | 3% | 91% | 2.5 s / 3.2 s | $0.00030 |
+| c4: 5 frames + subtitles (earlier default) | 61% | 3% | 82% | 2.6 s / 4.1 s | $0.00030 |
+| c8: v3 with an 8 s window | 69% | 0% | 91% | 2.4 s / 3.7 s | $0.00030 |
+| c6: Nova Pro, same context as c4 | 69% | 3% | 82% | 2.6 s / 5.0 s | $0.00389 |
+
+Paired by question, the default beat c4 on 5 questions and lost none (30 ties). Accuracy is (correct + 0.5 x partial) / graded. Honest numbers about the numbers:
+- **Dev split** (used to design prompt v3, so optimistic), `eval/results/summary-dev.md`: 1 frame 57%, 3 frames 67%, 5 frames 70%, 5 frames + subtitles 73%, 8 s window 83%, Nova Pro 80%, prompt v3 87%.
+- **Small samples:** 4 to 11 questions per category, and 2 of 15 answers changed between two identical runs even at temperature 0. Treat differences of 1-2 questions as noise.
+- **Grading:** all answers were graded by an automated assistant against expected answers that the project owner confirmed by watching the clips. A 15-answer spot-check by the owner to measure agreement is **pending**; this README will state the agreement rate once it exists.
+- One Nova Pro request of 35 was throttled by Bedrock and is left ungraded.
+
+Total live spend for everything above: **322 live calls, $0.2558** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
+
+Reproduce: `AWS_PROFILE=<profile> AWS_REGION=us-east-1 node backend/scripts/run.ts c7-v3 --split test`, then `node backend/scripts/grade-page.ts <runDir>` (a blind grading page), `node backend/scripts/grade-import.ts <grades.csv>` and `node backend/scripts/summarize.ts <runDirs>`. Raw answers and the grades we used are committed under `eval/`.
+
+## Tests
+
+`cd backend && npm test` (42 tests: window selection, subtitles, prompt, retry and timeouts, cache, cost guard, eval statistics) and `cd app && npm test` (11 tests: contrast ratios, spoken time, answer note).
+
+## Limitations
+
+- Action questions ("What just happened?") are the weakest category (63% on the test split, 4 questions); answers are often correct but incomplete.
+- The "What does the text say?" question can return text that was on screen a few seconds earlier, and counting can include people from earlier frames in the window.
+- Pre-cut CC-BY clips only: frames are extracted offline and the backend runs on the development Mac, not a live stream or a real TV.
+- Screen-reader labels exist; actual VoiceView speech on the emulator is not verified (friction log #18). User tests with outside viewers have a script (`docs/USER_TESTS.md`); results are added there only if the sessions are run.
+- Identity questions describe appearance; the model is told not to identify real people from faces.
+
+## Repository map
+
+`app/` Vega app, `backend/` API, window selection, prompt, Bedrock client and eval scripts (with tests), `clips/` manifest, subtitles and indexes, `eval/` questions, configs, results, grades and cost log, `docs/` progress, decisions, friction log, product feedback, feature requests, demo script, user tests, submission text.
+
+## Licenses
+
+Code: MIT (`LICENSE`). Clips: see `clips/NOTICE.md` (Blender Foundation films under CC-BY, a public-domain 1906 film; all audio removed). Tears of Steel, Sintel, Big Buck Bunny, Spring and Caminandes: (CC) Blender Foundation.

@@ -18,7 +18,7 @@
 - Next: Phase 2 (Opus plan): needs AWS account + CLI, one real clip with a handwritten SRT, ffmpeg keyframes, Bedrock call.
 
 ## 2026-10-04 (Phase 2, everything except live Bedrock)
-- Clip: Tears of Steel excerpt (45 s, CC-BY 3.0, silent audio), 90 frames at 2 fps / 512 px, subtitles re-timed (clips/fetch-tos.sh, clips/NOTICE.md).
+- Clip: Tears of Steel excerpt (45 s, CC-BY 3.0, silent audio), 90 frames at 2 fps / 512 px, subtitles re-timed (backend/scripts/fetch-clips.ts, clips/NOTICE.md).
 - Backend: POST /ask {clipId, timestamp, question} -> window selection (last 4 s, <=5 frames; subtitles +/-10 s) -> prompt -> VisionClient (stub now, live Converse ready, lazy SDK import) -> parsed answer {answer, latencyMs, framesUsed, model}. 20 unit tests pass (`cd backend && npm test`).
 - Cost guard: live calls only, written to eval/cost_log.csv, warns at $50/$100/$130, refuses live calls at $130 unless ALLOW_OVER_BUDGET=1 (tested with a fake live client).
 - App: plays the new clip on the VVD and sends the new request shape; a Menu press at 0:16 returned the stub answer through the new pipeline.
@@ -69,3 +69,9 @@
 - Accessibility: roles, labels, hints and a spoken orientation line added. VoiceView can be enabled on the VVD with a Back+Menu hold; the Text Banner showed the focused button's label ("What just happened?") and, on the answer card, "Answer: ... Based on the last 4 seconds of video and recent dialogue (subtitles)" (after the Ask another label fix: duplicated period and trailing "Ask another question" removed). Actual audio and Menu-key behavior under VoiceView are not verified (see FRICTION_LOG #18).
 - docs/USER_TESTS.md has the 10-minute script, post-test questions, rating items, consent notes and tables. NEXT (owner): run 3-5 sessions, fill the tables; then I fix the top issues. The phone companion page was not started (owner chose to skip for now).
 - Quality note from the live check: at 0:12 the default config said "The woman raised her left hand to her face" (the true event is her raising a robotic hand toward the man), i.e. action answers are still the weakest category.
+
+## 2026-10-05 (Phase 5 in progress: submission materials drafted)
+- Fixed blockers: the app now takes its clip from `node backend/scripts/prepare-app-clip.ts <id>` (writes `app/src/clip.ts`), so a fresh clone can run; assistant-name strings removed from tracked files (git history still has a few and must be scrubbed before the repo goes public); app display name/package/manifest title renamed (build output is now `moment-app_aarch64.vpkg`); NOTICE covers all six clips; `backend/scripts/spend.ts` computes spend from the cost log (322 live calls, $0.2558 at this commit; refresh before submitting).
+- Drafted: README (with GIF and screenshots), docs/DEMO_SCRIPT.md, docs/PRODUCT_FEEDBACK.md, docs/FEATURE_REQUESTS.md, docs/SUBMISSION.md, cleaned docs/FRICTION_LOG.md (18 entries, all fields).
+- Placeholders that need real data: owner spot-check agreement rate; user-test summary or "not run"; repository URL and visibility; demo video URL.
+- Open decisions for the owner: repo public (after a history scrub, force-push) vs private + reviewers; enter the Open Source mini challenge or not; demo uses the build-time clip switch (option a).

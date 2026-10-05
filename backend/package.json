@@ -10,5 +10,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1146.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

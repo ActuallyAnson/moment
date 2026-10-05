@@ -1,8 +1,8 @@
 import {API_BASE, REQUEST_TIMEOUT_MS} from './config';
+import {CLIP_ID} from './clip';
 
 export type AskResult = {answer: string; t: number; latencyMs?: number; framesUsed?: number[]; cuesUsed?: number; model?: string};
 
-const CLIP_ID = 'tos';
 
 export class AskError extends Error {}
 

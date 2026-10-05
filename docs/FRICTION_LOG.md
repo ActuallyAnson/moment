@@ -1,130 +1,167 @@
 # Friction Log
 
-Each entry: task, steps, expected vs actual, severity, workaround, suggestion.
+Every entry has: task, steps, expected vs actual, severity, workaround, suggestion. Environment for all entries: macOS 27 (Apple Silicon, 18 GB RAM), Vega SDK 0.24.12112, Node 24.4.1, Bedrock in us-east-1, Oct 4-5 2026.
+The entries most useful to the platform teams are 5, 6, 7, 9, 10, 12, 16 and 18.
 
 ## 1. Homebrew awscli fails to start on macOS (Apple Silicon)
 - **Task:** install the AWS CLI via Homebrew.
-- **Steps:** `brew install awscli`, then `aws --version` (also after `brew reinstall awscli`).
+- **Steps:** `brew install awscli`, then `aws --version`; repeated after `brew reinstall awscli`.
 - **Expected:** prints the version.
-- **Actual:** `ImportError ... Library not loaded: /opt/homebrew/opt/aws-c-s3/lib/libaws-c-s3.1.2.dylib`. Homebrew installed aws-c-s3 1.3.0 while awscli 2.37.8 links against 1.2.
+- **Actual:** `ImportError ... Library not loaded: /opt/homebrew/opt/aws-c-s3/lib/libaws-c-s3.1.2.dylib`. Homebrew had installed aws-c-s3 1.3.0 while awscli 2.37.8 links against 1.2.
 - **Severity:** medium (blocks Bedrock setup until fixed).
-- **Workaround:** pending; fallback is the official AWS CLI pkg installer.
-- **Suggestion:** pin compatible aws-c-* versions in the formula, or document the pkg installer as the supported path.
+- **Workaround:** `brew reinstall aws-c-s3 awscli` (reinstalling both together fixed it the next day, awscli 2.37.9).
+- **Suggestion:** pin compatible aws-c-* versions in the formula, or document the official pkg installer as the supported path.
 
 ## 2. Homebrew ffmpeg has no drawtext filter
 - **Task:** generate a test video with a burned-in timestamp.
-- **Steps:** `ffmpeg -filters | grep drawtext` (no output).
-- **Expected:** drawtext available.
-- **Actual:** the default `ffmpeg` formula omits freetype. `ffmpeg-full` includes it but is much larger.
+- **Steps:** `ffmpeg -filters | grep drawtext` returns nothing.
+- **Expected:** drawtext is available.
+- **Actual:** the default `ffmpeg` formula omits freetype; `ffmpeg-full` includes it but is much larger.
 - **Severity:** low.
-- **Workaround:** use `testsrc`, which has a built-in frame counter and timer.
-- **Suggestion:** none for the hackathon tooling; noted for the clip prep docs.
+- **Workaround:** use the `testsrc` source, which has a built-in frame counter.
+- **Suggestion:** mention it in clip-preparation docs for projects that need text overlays.
 
 ## 3. Vega installer requires closing VS Code
 - **Task:** install the Vega SDK.
-- **Steps:** read https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html
-- **Expected:** installer can run alongside a running editor.
-- **Actual:** docs ask to close VS Code first, which interrupts any session using it as a terminal host.
+- **Steps:** follow https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html.
+- **Expected:** the installer can run next to a running editor.
+- **Actual:** the docs ask to close VS Code first, which interrupts any session that uses it as a terminal host.
 - **Severity:** low.
 - **Workaround:** close VS Code before running the installer.
-- **Suggestion:** have the installer detect a running VS Code and offer to install the extension later.
+- **Suggestion:** detect a running VS Code and offer to install the extension later.
 
 ## 4. Vega installer needs stdin; piped install fails
-- **Task:** install the Vega SDK non-interactively from a terminal agent.
-- **Steps:** `curl -fsSL https://sdk-installer.vega.labcollab.net/get_vvm.sh | bash`
+- **Task:** install the Vega SDK from a non-interactive shell.
+- **Steps:** `curl -fsSL https://sdk-installer.vega.labcollab.net/get_vvm.sh | bash`.
 - **Expected:** installs with defaults.
-- **Actual:** the CLI downloads, then fails at the "Enter new component installation directory" prompt with `failed to read input: EOF`. The script also reads `/dev/tty`, which is unavailable without a terminal.
+- **Actual:** the CLI downloads, then fails at the "Enter new component installation directory" prompt with `failed to read input: EOF`; the script also reads `/dev/tty`, which is unavailable without a terminal.
 - **Severity:** low.
-- **Workaround:** download the script to a file and run `yes '' | bash get_vvm.sh`.
-- **Suggestion:** support a `--yes` / non-interactive flag, and fall back to defaults when stdin is not a TTY.
+- **Workaround:** download the script to a file and run `yes '' | bash get_vvm.sh` (or run it in a normal terminal window).
+- **Suggestion:** support a `--yes` flag and fall back to defaults when stdin is not a TTY.
 
-## 5. Vega Virtual Device stuck on Fire TV boot logo (macOS 27, Apple Silicon)
-- **Task:** boot the VVD (Phase 0 no-go gate).
-- **Steps:** `vega virtual-device start --timeout 180` on macOS 27 / M-series / 18 GB RAM, SDK 0.24.12112.
+## 5. Vega Virtual Device stuck on the Fire TV boot logo (macOS 27, Apple Silicon)
+- **Task:** boot the Vega Virtual Device (VVD).
+- **Steps:** `vega virtual-device start --timeout 180`.
 - **Expected:** boots to the home screen within the timeout and appears in `vega device list`.
-- **Actual:** the VVD window opened and sat on the Fire TV logo for 17+ minutes at ~250% CPU. `vega device list` stayed empty, and the `start` command ignored its 180 s timeout and kept running.
+- **Actual:** the VVD window opened and stayed on the Fire TV logo for 17+ minutes at about 250% CPU; `vega device list` stayed empty and the `start` command ignored its 180 s timeout and kept running.
 - **Severity:** high (blocks the whole Vega path).
-- **Workaround:** killed all VVD/dutyfree processes, then `vega virtual-device start --timeout 600`; the second boot registered and reported "Virtual device ready" within about a minute. Cause of the first hang is unknown (first-boot image setup is a guess, not verified).
-- **Suggestion:** the timeout should terminate the process and print the cause; the troubleshooting page (kvd-issues) has no entry for boot hangs on Apple Silicon or newer macOS releases; list the supported macOS versions in the install doc.
+- **Workaround:** kill all VVD processes, then `vega virtual-device start --timeout 600`; the second boot reported "Virtual device ready" within about a minute. The cause of the first hang is unknown.
+- **Suggestion:** make the timeout terminate the process and print a cause; add boot hangs on Apple Silicon and newer macOS releases to the troubleshooting page; list supported macOS versions in the install doc.
 
-## 6. Metro/`build-vega` hangs silently on watchman under ~/Documents (macOS)
-- **Task:** build the hello-world app (`npm run build:app`).
-- **Steps:** repo in `~/Documents/GitHub/...`, `watchman` installed via Homebrew for the Vega prerequisites, run `react-native build-vega --build-type Release`.
-- **Expected:** build completes in a minute or two.
-- **Actual:** 13+ minutes at 0% CPU with no output. With stdin closed, Metro prints `Waiting for Watchman watch-project (Ns)...` forever. Root cause: macOS shows a one-time dialog "watchman would like to access files in your Documents folder" that is easy to miss, and watchman blocks until it is answered. The wrapper (`npm run build:app` via npm-run-all) hides Metro's message entirely.
-- **Severity:** high (looks like a hang, costs 15+ minutes).
-- **Workaround:** a stub `watchman` earlier on PATH that exits 1 makes Metro fall back and the build succeeds; the proper fix is to click Allow on the macOS prompt (or keep the repo outside Documents/Desktop/Downloads).
-- **Suggestion:** the install docs should warn that macOS protects Documents/Desktop/Downloads and say to keep projects elsewhere or grant watchman access; `build-vega` should surface the watchman wait message and time out.
+## 6. `build-vega` hangs silently on watchman under ~/Documents (macOS)
+- **Task:** build the hello-world app.
+- **Steps:** repo inside `~/Documents/GitHub/...`, watchman installed via Homebrew (a Vega prerequisite), run `npm run build:app` (which runs `react-native build-vega --build-type Release`).
+- **Expected:** the build completes in a minute or two.
+- **Actual:** 13+ minutes at 0% CPU with no output. With stdin closed, Metro prints `Waiting for Watchman watch-project (Ns)...` forever. Cause: macOS shows a one-time dialog "watchman would like to access files in your Documents folder" that is easy to miss, and watchman blocks until it is answered; the npm wrapper hides Metro's message entirely.
+- **Severity:** high (looks like a hang, cost about 15 minutes).
+- **Workaround:** click Allow on the macOS prompt, or keep the project outside Documents/Desktop/Downloads. (A stub `watchman` earlier on PATH that exits 1 also let the build finish.)
+- **Suggestion:** warn in the install docs about macOS-protected folders; have `build-vega` surface the watchman wait message and time out.
 
-## 7. w3cmedia docs pin an old version and show an ordering trap
-- **Task:** play a bundled MP4 with `VideoPlayer` + `KeplerVideoSurfaceView` on RN 0.83.
-- **Steps:** follow media-player-setup (pins `~2.1.80`, a metro-react-native-babel-preset babel config) and the package README.
+## 7. w3cmedia docs pin an old version and hide an ordering trap
+- **Task:** play a bundled MP4 with `VideoPlayer` and `KeplerVideoSurfaceView` on React Native 0.83.
+- **Steps:** follow media-player-setup (pins `~2.1.80` and a `metro-react-native-babel-preset` babel config) and the package README example.
 - **Expected:** copy-paste setup works on the current `helloWorld` template.
-- **Actual:** npm `latest` is 2.3.2 (worked without touching babel.config.js; the doc's babel preset is from the RN 0.72 era). The README example calls `play()` inside `onSurfaceViewCreated`, but the surface was created twice before `loadedmetadata`, so `play()` ran with no source and the clock stayed at 0 with no error.
+- **Actual:** npm `latest` (2.3.2) worked without touching `babel.config.js` (the documented preset is from the RN 0.72 era). The README example calls `play()` inside `onSurfaceViewCreated`, but the surface was created twice before `loadedmetadata`, so `play()` ran without a source and the clock stayed at 0 with no error.
 - **Severity:** medium (silent failure, no error event).
-- **Workaround:** call `play()` only after both the surface exists and `loadedmetadata` fired.
-- **Suggestion:** update the doc to the current version and template, and show the surface-created / metadata-loaded ordering in the example.
+- **Workaround:** call `play()` only after both the surface exists and `loadedmetadata` has fired.
+- **Suggestion:** update the docs to the current version and template, and show the surface-created / metadata-loaded ordering in the example.
 
-## 8. Local asset path is undocumented
-- **Task:** play a file bundled in the app.
-- **Actual:** `/pkg/assets/raw/clip.mp4` worked, with the file at `app/assets/raw/clip.mp4`. The path came from a developer-community answer, not the official docs, which only show HTTPS URLs.
-- **Severity:** low. **Suggestion:** document local-file playback and the `/pkg/assets/raw` convention.
+## 8. Local asset playback path is undocumented
+- **Task:** play a video file bundled inside the app.
+- **Steps:** looked in the official media docs for a local-file URI; found only HTTPS URLs.
+- **Expected:** a documented path convention for packaged assets.
+- **Actual:** `/pkg/assets/raw/clip.mp4`, with the file at `app/assets/raw/clip.mp4`, worked. The path came from a developer-community answer, not the official docs.
+- **Severity:** low.
+- **Workaround:** use that path.
+- **Suggestion:** document local-file playback and the `/pkg/assets/raw` convention.
 
-## 9. Host address from the Vega Virtual Device is undocumented
+## 9. Host address from the VVD is undocumented
 - **Task:** call a backend running on the development Mac from the app on the VVD.
-- **Steps:** searched the Vega docs for the emulator-to-host loopback address.
-- **Expected:** a documented address (like Android's 10.0.2.2).
-- **Actual:** nothing in the docs. The device's default gateway (`vega exec vda -s emulator-5554 shell cat /proc/net/route`) is 10.0.2.2, which is QEMU user-mode networking; it reached a Node server bound to 127.0.0.1 on the Mac. Plain-HTTP `fetch` worked with `com.amazon.network.service` in the manifest (whether that service is required was not tested). The cleartext setting is documented only for WebViews.
-- **Severity:** medium. **Workaround:** use `http://10.0.2.2:<port>` (or `vda reverse`). **Suggestion:** document the host address and the cleartext policy for `fetch`.
+- **Steps:** searched the Vega docs for the emulator-to-host loopback address; read the device's default route (`vega exec vda -s emulator-5554 shell cat /proc/net/route`).
+- **Expected:** a documented host address (as on other emulators).
+- **Actual:** nothing in the docs. The default gateway is 10.0.2.2 (QEMU user-mode networking) and it reached a Node server bound to 127.0.0.1 on the Mac. Plain-HTTP `fetch` worked with `com.amazon.network.service` in the manifest (whether that service is required was not tested). The cleartext setting is documented only for WebViews.
+- **Severity:** medium.
+- **Workaround:** use `http://10.0.2.2:<port>` (or `vda reverse`).
+- **Suggestion:** document the host address and the cleartext policy for `fetch`.
 
 ## 10. `player.currentTime` reads 0 immediately after `pause()`
 - **Task:** capture the playback timestamp when the viewer presses the Ask key.
-- **Steps:** call `pause()`, then read `currentTime`, in the same handler (w3cmedia 2.3.2, VVD).
+- **Steps:** call `pause()`, then read `currentTime` in the same handler (w3cmedia 2.3.2, VVD).
 - **Expected:** the paused position.
-- **Actual:** 0. The question was sent with t=0 although the clip was at 12 s. Reading `currentTime` first and then pausing gives the right value (12.6 s, matching the burned-in counter).
-- **Severity:** high (silently wrong data). **Workaround:** read before pausing. **Suggestion:** document the behaviour, or keep `currentTime` stable while paused (the same value did read correctly in an earlier test that logged it from a timer after pausing, so the cause may be timing-related; not verified).
+- **Actual:** 0, so a question was sent with t=0 while the clip was at 12 s. Reading `currentTime` first and then pausing gives the right value (12.6 s, matching the burned-in counter). A timer that logged `currentTime` after pausing in an earlier test read correctly, so the cause may be timing-related (not verified).
+- **Severity:** high (silently wrong data).
+- **Workaround:** read the time before pausing.
+- **Suggestion:** document the behaviour, or keep `currentTime` stable while paused.
 
-## 11. Injecting remote keys needs `vda shell`, and the CLI examples don't say so
+## 11. Injecting remote keys needs `vda shell`; the examples don't say so
 - **Task:** drive the app without a mouse for repeatable tests.
-- **Actual:** `vega exec inputd-cli button_press KEY_MENU` fails with "No such file"; it works as `vega exec vda -s emulator-5554 shell "inputd-cli button_press KEY_MENU"` (inputd-cli lives on the device). `vda` itself is not on PATH after `source ~/vega/env`.
-- **Severity:** low. **Suggestion:** show the full command in the inputd-cli doc.
+- **Steps:** `vega exec inputd-cli button_press KEY_MENU`.
+- **Expected:** the key press reaches the VVD.
+- **Actual:** "No such file": `inputd-cli` lives on the device. `vega exec vda -s emulator-5554 shell "inputd-cli button_press KEY_MENU"` works. `vda` itself is not on PATH after `source ~/vega/env`.
+- **Severity:** low.
+- **Workaround:** the full command above.
+- **Suggestion:** show the complete command in the inputd-cli doc.
 
-## 12. New AWS account blocks Bedrock until "verification" completes (up to 2 h)
+## 12. A new AWS account blocks Bedrock until "verification" completes (up to 2 h)
 - **Task:** first live Bedrock Converse call (Nova Lite) from a freshly created account on the Free plan.
-- **Steps:** create account, IAM user with `bedrock:InvokeModel`, `aws configure`, call Converse.
+- **Steps:** create the account, an IAM user with `bedrock:InvokeModel`, `aws configure`, call Converse.
 - **Expected:** the call works (the IAM identity and `list-foundation-models` already worked).
-- **Actual:** `AccessDeniedException: Your account is currently being verified. Verification normally takes less than 2 hours.` Nothing in the console pointed to this beforehand.
+- **Actual:** `AccessDeniedException: Your account is currently being verified. Verification normally takes less than 2 hours.` Nothing in the console warned about this beforehand.
 - **Severity:** medium (a surprise wait during a deadline-driven hackathon).
-- **Workaround:** wait, or contact AWS support after 2 hours.
-- **Suggestion:** show a verification-status banner in the console and in the Bedrock page; mention it in hackathon onboarding for credits.
+- **Workaround:** wait (it cleared on a later retry the same day), or contact AWS support after 2 hours.
+- **Suggestion:** show a verification-status banner in the console and on the Bedrock page; mention it in hackathon onboarding.
 
 ## 13. `bedrock:Converse` is not an IAM action
-- **Task:** write the least-privilege policy for Converse.
-- **Actual:** the policy editor reports "The action bedrock:Converse does not exist"; the Converse API is authorized by `bedrock:InvokeModel`. Easy to get wrong because the API name suggests a matching action.
-- **Severity:** low. **Suggestion:** note the mapping on the Converse API reference page.
+- **Task:** write a least-privilege policy for the Converse API.
+- **Steps:** add `bedrock:Converse` to a JSON policy in the IAM editor.
+- **Expected:** an action matching the API name.
+- **Actual:** "The action bedrock:Converse does not exist"; the Converse API is authorized by `bedrock:InvokeModel`.
+- **Severity:** low.
+- **Workaround:** allow `bedrock:InvokeModel` (plus the list actions used for checks).
+- **Suggestion:** note the mapping on the Converse API reference page.
 
-## 14. Vega Virtual Device does not survive the Mac sleeping/restarting; `run-app` error is opaque
+## 14. The VVD does not survive the Mac sleeping or restarting
 - **Task:** relaunch the app on the VVD the next day.
-- **Actual:** `vega device list` printed "No devices found" and `run-app` said it could not find 'VirtualDevice' (that message is clear), but nothing in the earlier session warned that the VVD had stopped; restarting needed another `vega virtual-device start`.
-- **Severity:** low. **Workaround:** restart the VVD (about one minute when it works). **Suggestion:** a `vega virtual-device status` command and auto-start on `run-app`.
+- **Steps:** `vega run-app ... -d VirtualDevice`, then `vega device list`.
+- **Expected:** the device is still running, or `run-app` starts it.
+- **Actual:** "No devices found" and a "Couldn't find device 'VirtualDevice'" error; nothing had warned that the VVD had stopped.
+- **Severity:** low.
+- **Workaround:** `vega virtual-device start --timeout 600` (about a minute when it works).
+- **Suggestion:** add `vega virtual-device status` and an option to auto-start on `run-app`.
 
 ## 15. Bedrock SDK retries and abort signals need care to bound latency
-- **Task:** keep the end-to-end time under the app's timeout with one retry.
-- **Actual:** the AWS SDK retries on its own (default 3 attempts) with no total deadline, so a stuck call can exceed any UI timeout. We set `maxAttempts: 1`, pass an `AbortSignal` per attempt and wrap the call in our own race; the SDK's abort behavior is only verified through fake clients in tests, not against a real hung connection.
-- **Severity:** low. **Suggestion:** document a recommended pattern for a total deadline across retries for interactive use cases.
+- **Task:** keep end-to-end time under the app's timeout with one retry.
+- **Steps:** read the AWS SDK for JS v3 retry behavior; wrote fake clients that hang, flake or fail.
+- **Expected:** a simple way to set a total deadline.
+- **Actual:** the SDK retries by itself (default 3 attempts) with no total deadline, so a stuck call can exceed any UI timeout. We set `maxAttempts: 1`, pass an `AbortSignal` per attempt and wrap the call in our own race. This behavior is verified through fake clients in tests, not against a real hung connection.
+- **Severity:** low.
+- **Workaround:** the pattern above (attempt timeouts 4 s + 3 s).
+- **Suggestion:** document a recommended total-deadline pattern for interactive use cases.
 
-## 16. Layout canvas is 960x540 dp, not 1920x1080 px (easy to size everything 2x too big)
+## 16. Layout canvas is 960x540 dp, not 1920x1080 px
 - **Task:** size TV UI for 10-foot viewing.
-- **Actual:** `Dimensions.get('window')` on the VVD returns {width: 960, height: 540, scale: 2}. Written for 1080p pixels, my first panel (860 wide, 46 px text) covered about 90% of the screen. The Fire TV design guidance is written in 1080p pixels, so the two conventions are easy to mix up.
-- **Severity:** medium. **Workaround:** a `px()` helper that scales from a 1920 reference. **Suggestion:** state the dp canvas and the conversion next to the typography and safe-area guidance in the Vega UX docs.
+- **Steps:** built the first UI from 1080p-pixel guidance, then read `Dimensions.get('window')` on the VVD.
+- **Expected:** a 1920x1080 canvas.
+- **Actual:** `{width: 960, height: 540, scale: 2}`. Sized for 1080p pixels, my first panel (860 wide, 46 px text) covered about 90% of the screen. The Fire TV design guidance is in 1080p pixels, so the two conventions are easy to mix up.
+- **Severity:** medium.
+- **Workaround:** a `px()` helper that scales from a 1920 reference.
+- **Suggestion:** state the dp canvas and the conversion next to the typography and safe-area guidance.
 
-## 17. Remote key event names differ from what the docs list
+## 17. Remote key event names differ from the docs
 - **Task:** close the overlay when the viewer presses Play/Pause.
-- **Actual:** `useTVEventHandler` reports `play` for the VVD's Play/Pause key (with `rewind`, `forward`); the docs list `playpause`/`skip_*`. Found with an on-screen key logger.
-- **Severity:** low. **Workaround:** accept `play`, `pause` and `playpause`. **Suggestion:** document the event names the VVD actually emits per key.
+- **Steps:** logged `useTVEventHandler` events on the VVD.
+- **Expected:** `playpause` (and `skip_*`) as listed in the docs.
+- **Actual:** the VVD's Play/Pause key arrives as `play`; the others as `rewind` and `forward`.
+- **Severity:** low.
+- **Workaround:** accept `play`, `pause` and `playpause`.
+- **Suggestion:** document the event names the VVD emits per key.
 
-## 18. VoiceView on the VVD: enabling works only via a key gesture; a system dialog then traps injected keys
-- **Task:** verify screen-reader behavior of the overlay and answer card.
-- **Steps:** `vdcm set ".../VoiceViewEnabled" "ENABLED"` fails with "No permission for operation". Holding Back + Menu for 3 s (via `inputd-cli`) does enable it (`vdcm get` then shows ENABLED). Holding Fast-forward + Rewind for 3 s turns on the Text Banner, which shows the text that would be spoken (very useful, no audio needed), but its explanatory dialog then ignored injected Enter/Right/Down presses (even a double Enter), so I could not dismiss it from the command line. Toggling VoiceView off (same gesture) and relaunching the app fixed it; the Text Banner setting persisted separately and kept working.
-- **Not verified:** actual speech/audio on the VVD, and whether VoiceView intercepts the Menu key (Menu still opened the panel in the VVD with the banner on).
-- **Severity:** medium for accessibility testing. **Suggestion:** allow `vdcm set` for accessibility settings on the VVD, make the Text Banner dialog respond to injected keys, and document the Text Banner as a way to verify spoken output.
+## 18. VoiceView on the VVD: enabling only via a key gesture; a system dialog then traps injected keys
+- **Task:** verify screen-reader behavior of the overlay and the answer card.
+- **Steps:** `vdcm set ".../VoiceViewEnabled" "ENABLED"`; then holding Back + Menu for 3 s through `inputd-cli`; then holding Fast-forward + Rewind for 3 s (Text Banner).
+- **Expected:** a documented command enables VoiceView, and injected keys control the settings dialogs.
+- **Actual:** `vdcm set` fails with "No permission for operation". The Back + Menu hold does enable VoiceView (`vdcm get` shows ENABLED). The Text Banner shows the text that would be spoken (very useful, no audio needed), but its explanatory dialog ignored injected Enter/Right/Down presses (even a double Enter). Turning VoiceView off with the same gesture and relaunching the app fixed it; the Text Banner setting persisted separately.
+- **Not verified:** actual speech on the VVD, and whether VoiceView intercepts the Menu key (Menu still opened the panel with the banner on).
+- **Severity:** medium for accessibility testing.
+- **Workaround:** the Back + Menu hold, and reading the Text Banner.
+- **Suggestion:** allow `vdcm set` for accessibility settings on the VVD, make the Text Banner dialog respond to injected keys, and document the Text Banner as a way to verify spoken output.
