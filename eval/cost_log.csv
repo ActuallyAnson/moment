@@ -323,3 +323,4 @@ date,model,region,images,input_tokens,output_tokens,est_cost_usd,note
 2026-10-05T07:44:59.318Z,amazon.nova-lite-v1:0,us-east-1,5,3901,42,0.000244,m-muuy2n7d-a19m tos@14.7 attempts=1
 2026-10-05T07:55:00.540Z,amazon.nova-lite-v1:0,us-east-1,5,3897,14,0.000237,m-muuyfji0-4xtt tos@13.5 attempts=1
 2026-10-05T07:55:47.046Z,amazon.nova-lite-v1:0,us-east-1,5,3901,35,0.000242,m-muuygjah-k3au tos@14.8 attempts=1
+2026-10-05T08:04:02.780Z,amazon.nova-lite-v1:0,us-east-1,5,3899,27,0.000240,m-muuyr58y-bglj tos@14.1 attempts=1

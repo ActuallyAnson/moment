@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+import LinearGradient from '@amazon-devices/react-linear-gradient';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {formatTime, windowNote} from '../format';
-import {colors} from '../theme';
+import {colors, gradients} from '../theme';
 import {px, SAFE_X, SAFE_Y, useFont} from '../ui';
 import {FocusableButton} from './FocusableButton';
 import {Dots} from './Dots';
@@ -39,7 +40,7 @@ export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain}: Props) => {
       borderRadius: px(28),
       borderWidth: px(2),
       borderColor: colors.cardBorder,
-      backgroundColor: colors.card,
+      overflow: 'hidden',
       zIndex: 20,
     },
     accentBar: {
@@ -61,6 +62,7 @@ export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain}: Props) => {
 
   return (
     <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={styles.card}>
+      <LinearGradient colors={gradients.card} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={StyleSheet.absoluteFill} />
       <View style={styles.accentBar} aria-hidden />
       <Text style={styles.question}>
         {state.question.toUpperCase()} · {formatTime(state.t)}

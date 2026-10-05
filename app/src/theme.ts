@@ -11,3 +11,11 @@ export const colors = {
   onAccent: '#101010',
   focusBorder: '#ffffff',
 };
+
+// Gradient stops (react-linear-gradient). Cards fade from a lighter slate to near-black; focus is amber to orange.
+export const gradients = {
+  card: ['rgba(30,34,52,0.96)', 'rgba(10,12,20,0.97)'],
+  focus: ['#ffc247', '#ff9a1f'],
+  scrimBottom: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.78)'],
+  scrimRight: ['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.80)'],
+};

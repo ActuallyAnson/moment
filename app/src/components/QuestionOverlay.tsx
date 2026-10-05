@@ -1,9 +1,11 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+import LinearGradient from '@amazon-devices/react-linear-gradient';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {QUESTIONS} from '../questions';
 import {formatTime, spokenTime} from '../format';
-import {colors} from '../theme';
+import {colors, gradients} from '../theme';
+import {QuestionIcon} from './QuestionIcon';
 import {px, SAFE_X, SAFE_Y, useFont} from '../ui';
 import {FocusableButton} from './FocusableButton';
 
@@ -23,7 +25,7 @@ export const QuestionOverlay = ({t, onChoose, large, onToggleLarge}: Props) => {
       borderRadius: px(28),
       borderWidth: px(2),
       borderColor: colors.cardBorder,
-      backgroundColor: colors.card,
+      overflow: 'hidden',
       zIndex: 20,
       justifyContent: 'center',
     },
@@ -34,6 +36,7 @@ export const QuestionOverlay = ({t, onChoose, large, onToggleLarge}: Props) => {
   });
   return (
     <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={styles.panel}>
+      <LinearGradient colors={gradients.card} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={StyleSheet.absoluteFill} />
       <View
         accessible
         aria-label={`Ask about this moment. Paused at ${spokenTime(t)}. Four questions. Press back to resume.`}>
@@ -47,6 +50,7 @@ export const QuestionOverlay = ({t, onChoose, large, onToggleLarge}: Props) => {
             label={q}
             preferred={i === 0}
             hint={i === 0 ? 'Asks about the last few seconds of the video' : undefined}
+            icon={(c) => <QuestionIcon question={q} color={c} size={px(34)} />}
             onPress={() => onChoose(q)}
           />
         ))}
