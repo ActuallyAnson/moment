@@ -62,7 +62,7 @@ Paired by question, the default beat c4 on 5 questions and lost none (30 ties). 
 - **Grading:** all answers were graded by an automated assistant against expected answers that the project owner confirmed by watching the clips. A 15-answer spot-check by the owner to measure agreement is **pending**; this README will state the agreement rate once it exists.
 - One Nova Pro request of 35 was throttled by Bedrock and is left ungraded.
 
-Total live spend for everything above: **322 live calls, $0.2558** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
+Total live spend for everything above: **348 live calls, $0.2613** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
 
 Reproduce: `AWS_PROFILE=<profile> AWS_REGION=us-east-1 node backend/scripts/run.ts c7-v3 --split test`, then `node backend/scripts/grade-page.ts <runDir>` (a blind grading page), `node backend/scripts/grade-import.ts <grades.csv>` and `node backend/scripts/summarize.ts <runDirs>`. Raw answers and the grades we used are committed under `eval/`.
 
