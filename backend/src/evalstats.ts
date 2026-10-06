@@ -12,6 +12,9 @@ export const gradeKey = (questionId: string, answer: string | null): string =>
 export const score = (g: Grade): number => (g === 'correct' ? 1 : g === 'partial' ? 0.5 : 0);
 
 export const ABSTAIN = /(not sure|can't tell|cannot tell|can't see|cannot see|don't see|do not see|not visible|no text|nothing (is )?written|unable to)/i;
+export const NO_TRANSCRIPT = /(no subtitles|no dialogue|no transcript)/i;
+export const isNoTranscriptAnswer = (answer: string | null): boolean => NO_TRANSCRIPT.test(answer ?? '');
+
 export const isAbstention = (answer: string | null): boolean => ABSTAIN.test(answer ?? '');
 
 export const percentile = (values: number[], p: number): number => {
@@ -32,6 +35,7 @@ export type Summary = {
   hallucinationRate: number;
   notVisibleAbstention: number; // share of 'not visible' answers that abstain
   falseAbstention: number; // share of answerable questions that abstain
+  noDialogueHonesty: number | null; // share of 'no dialogue' answers that honestly say there is no transcript (null if none)
   p50: number;
   p95: number;
   costPerQuestion: number;
@@ -45,7 +49,8 @@ export const summarize = (rows: Row[]): Summary => {
   }
   const acc = (rs: Row[]) => (rs.length ? rs.reduce((s, r) => s + score(r.grade as Grade), 0) / rs.length : 0);
   const nv = rows.filter((r) => r.category === 'not visible');
-  const answerable = rows.filter((r) => r.category !== 'not visible');
+  const answerable = rows.filter((r) => r.category !== 'not visible' && r.category !== 'no dialogue');
+  const nd = rows.filter((r) => r.category === 'no dialogue');
   return {
     n: rows.length,
     graded: graded.length,
@@ -53,6 +58,7 @@ export const summarize = (rows: Row[]): Summary => {
     byCategory: Object.fromEntries(Object.entries(by).map(([k, v]) => [k, {n: v.length, accuracy: acc(v)}])),
     hallucinationRate: graded.length ? graded.filter((r) => r.grade === 'hallucinated').length / graded.length : 0,
     notVisibleAbstention: nv.length ? nv.filter((r) => isAbstention(r.answer)).length / nv.length : 0,
+    noDialogueHonesty: nd.length ? nd.filter((r) => isNoTranscriptAnswer(r.answer)).length / nd.length : null,
     falseAbstention: answerable.length ? answerable.filter((r) => isAbstention(r.answer)).length / answerable.length : 0,
     p50: percentile(rows.map((r) => r.latencyMs), 50),
     p95: percentile(rows.map((r) => r.latencyMs), 95),

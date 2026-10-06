@@ -181,3 +181,14 @@ test('dialogue model mode (variant B) uses at most 2 frames and the dialogue ins
   await handleAsk({question: 'Who is on screen?', t: 8}, deps);
   assert.doesNotMatch(seen[1].system, /quote the most recent lines/);
 });
+
+test('evalstats: no-dialogue honesty is measured separately and no-dialogue items are not counted as answerable', async () => {
+  const {summarize, isNoTranscriptAnswer} = await import('../src/evalstats.ts');
+  assert.ok(isNoTranscriptAnswer("This video has no subtitles, so I can't show what was said."));
+  assert.ok(isNoTranscriptAnswer('No dialogue in the subtitles for the last 10 seconds.'));
+  assert.ok(!isNoTranscriptAnswer("I'm not sure."));
+  const row = (id: string, category: string, answer: string) => ({id, category, answer, latencyMs: 0});
+  const s = summarize([row('a', 'no dialogue', 'This video has no subtitles, so I can\'t show what was said.'), row('b', 'no dialogue', 'Someone said: "Hi"'), row('c', 'dialogue', 'Someone said: "Hi"')]);
+  assert.equal(s.noDialogueHonesty, 0.5);
+  assert.equal(s.falseAbstention, 0);
+});
