@@ -25,7 +25,7 @@ export const IdleHint = ({visible}: {visible: boolean}) => {
   });
   return (
     <Animated.View style={[styles.pill, {opacity}]} aria-hidden={!visible} pointerEvents="none">
-      <Text style={styles.text}>Press Menu or Select to ask about this moment</Text>
+      <Text style={styles.text}>Press Menu or Select to ask · Back for clips</Text>
     </Animated.View>
   );
 };

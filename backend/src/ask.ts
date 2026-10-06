@@ -7,11 +7,17 @@ import {selectCues, selectFrames, DEFAULT_WINDOW} from './window.ts';
 import type {WindowConfig} from './window.ts';
 import type {VisionClient} from './bedrock.ts';
 import {crossed, estimateCost, HARD_STOP_USD, logCost, totalSpent} from './cost.ts';
-import {callWithRetry, DEFAULT_RETRY, UpstreamError} from './retry.ts';
+import {callWithRetry, DEFAULT_RETRY, PREFETCH_RETRY, UpstreamError} from './retry.ts';
 import type {RetryOptions} from './retry.ts';
 import {AnswerCache, cacheKey} from './cache.ts';
 
-export class AskInputError extends Error {}
+export class AskInputError extends Error {
+  code: 'input' | 'clip';
+  constructor(message: string, code: 'input' | 'clip' = 'input') {
+    super(message);
+    this.code = code;
+  }
+}
 
 export type AskDeps = {
   client: VisionClient;
@@ -25,6 +31,7 @@ export type AskDeps = {
   promptVersion?: PromptVersion;
   routeTextPreset?: boolean; // the 'What does the text say?' preset gets no dialogue at all
   noCache?: boolean; // the eval harness always bypasses the cache so latency numbers are real
+  inflight?: Map<string, Promise<AskResponse>>; // model calls in progress, keyed like the cache, so a viewer's /ask can join a prefetch
 };
 
 export type AskResponse = {
@@ -36,6 +43,9 @@ export type AskResponse = {
   model: string;
   t: number;
   cached?: boolean;
+  source?: 'live' | 'cache' | 'prefetch' | 'joined'; // where this answer came from (honest latency reporting)
+  origin?: 'ask' | 'prefetch'; // who made the model call (stored with the cached entry)
+  modelLatencyMs?: number; // the model call's own latency (differs from latencyMs on cache/prefetch hits)
   attempts?: number;
   inputTokens?: number;
   outputTokens?: number;
@@ -48,7 +58,8 @@ export const configHash = (cfg: WindowConfig, model: string, version: PromptVers
   createHash('sha256').update(JSON.stringify({cfg, model, version, routed, system: version === 'v3' ? SYSTEM_PROMPT_V3 : SYSTEM_PROMPT, v: PROMPT_VERSION})).digest('hex').slice(0, 12);
 
 // Accepts {clipId, timestamp, question}; also the Phase 1 shape {question, t}.
-export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string} = {}): Promise<AskResponse> => {
+export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string; origin?: 'ask' | 'prefetch'} = {}): Promise<AskResponse> => {
+  const origin = ctx.origin ?? 'ask';
   const b = (body ?? {}) as Record<string, unknown>;
   const question = b.question;
   const t = typeof b.timestamp === 'number' ? b.timestamp : b.t;
@@ -63,7 +74,7 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
   try {
     clip = await loadClip(deps.clipsDir, clipId);
   } catch {
-    throw new AskInputError(`unknown clip: ${clipId}`);
+    throw new AskInputError(`unknown clip: ${clipId}`, 'clip');
   }
 
   const cfg = deps.window ?? DEFAULT_WINDOW;
@@ -82,58 +93,89 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
   if (deps.cache && !deps.noCache) {
     const hit = deps.cache.get(key);
     if (hit) {
-      return {...hit, cached: true, latencyMs: 0, t};
+      return {...hit, cached: true, source: hit.origin === 'prefetch' ? 'prefetch' : 'cache', modelLatencyMs: hit.modelLatencyMs ?? hit.latencyMs, latencyMs: 0, t};
+    }
+  }
+  // Join a model call that is already running for the same context (e.g. a prefetch) instead of paying for a second one.
+  if (deps.inflight && !deps.noCache && origin === 'ask') {
+    const running = deps.inflight.get(key);
+    if (running) {
+      const waitStart = performance.now();
+      try {
+        const joined = await running;
+        return {...joined, source: 'joined', cached: false, latencyMs: Math.round(performance.now() - waitStart), t};
+      } catch {
+        // the other call failed (e.g. a throttled prefetch): fall through and make our own call
+      }
     }
   }
 
-  const prompt = buildPrompt({question, t, frames, cues}, version);
-  const images = await readFrames(clip, frames);
+  const compute = async (): Promise<AskResponse> => {
+    const prompt = buildPrompt({question, t, frames, cues}, version);
+    const images = await readFrames(clip, frames);
 
-  const before = deps.client.mode === 'live' ? await totalSpent(deps.costLogPath) : 0;
-  if (before >= HARD_STOP_USD && !deps.allowOverBudget) {
-    throw new UpstreamError(`budget guard: $${before.toFixed(2)} spent, live calls disabled`, 'budget', 0, false);
-  }
+    const before = deps.client.mode === 'live' ? await totalSpent(deps.costLogPath) : 0;
+    if (before >= HARD_STOP_USD && !deps.allowOverBudget) {
+      throw new UpstreamError(`budget guard: $${before.toFixed(2)} spent, live calls disabled`, 'budget', 0, false);
+    }
 
-  const started = performance.now();
-  const {value: res, attempts} = await callWithRetry(
-    (signal) => deps.client.answer({system: prompt.system, user: prompt.user, images}, {signal}),
-    deps.retry ?? DEFAULT_RETRY,
-  );
-  const latencyMs = Math.round(performance.now() - started);
+    const started = performance.now();
+    const {value: res, attempts} = await callWithRetry(
+      (signal) => deps.client.answer({system: prompt.system, user: prompt.user, images}, {signal}),
+      (origin === 'prefetch' ? PREFETCH_RETRY : (deps.retry ?? DEFAULT_RETRY)),
+    );
+    const latencyMs = Math.round(performance.now() - started);
 
-  let costUsd = 0;
-  if (deps.client.mode === 'live') {
-    const cost = estimateCost(res.model, deps.client.region, res.inputTokens, res.outputTokens);
-    costUsd = cost ?? 0;
-    await logCost(deps.costLogPath, {
-      date: new Date().toISOString(),
+    let costUsd = 0;
+    if (deps.client.mode === 'live') {
+      const cost = estimateCost(res.model, deps.client.region, res.inputTokens, res.outputTokens);
+      costUsd = cost ?? 0;
+      await logCost(deps.costLogPath, {
+        date: new Date().toISOString(),
+        model: res.model,
+        region: deps.client.region,
+        images: images.length,
+        inputTokens: res.inputTokens,
+        outputTokens: res.outputTokens,
+        estCostUsd: costUsd,
+        note: `${ctx.rid ?? '-'} ${clipId}@${t.toFixed(1)} attempts=${attempts}${origin === 'prefetch' ? ' prefetch' : ''}${cost === null ? ' price-unknown' : ''}`,
+      });
+      for (const level of crossed(before, before + costUsd)) {
+        console.warn(`BUDGET WARNING: cumulative live cost crossed $${level}`);
+      }
+    }
+
+    const out: AskResponse = {
+      answer: parseAnswer(res.text),
+      rawText: res.text,
+      latencyMs,
+      modelLatencyMs: latencyMs,
+      source: 'live',
+      origin,
+      framesUsed: frames.map((f) => f.t),
+      cuesUsed: cues.length,
       model: res.model,
-      region: deps.client.region,
-      images: images.length,
+      t,
+      attempts,
       inputTokens: res.inputTokens,
       outputTokens: res.outputTokens,
-      estCostUsd: costUsd,
-      note: `${ctx.rid ?? '-'} ${clipId}@${t.toFixed(1)} attempts=${attempts}${cost === null ? ' price-unknown' : ''}`,
-    });
-    for (const level of crossed(before, before + costUsd)) {
-      console.warn(`BUDGET WARNING: cumulative live cost crossed $${level}`);
+    };
+  return out;
+  };
+
+  const promise = compute();
+  if (deps.inflight && !deps.noCache) {
+    deps.inflight.set(key, promise);
+  }
+  try {
+    const out = await promise;
+    if (deps.cache && !deps.noCache) {
+      deps.cache.set(key, out);
+    }
+    return out;
+  } finally {
+    if (deps.inflight && deps.inflight.get(key) === promise) {
+      deps.inflight.delete(key);
     }
   }
-
-  const out: AskResponse = {
-    answer: parseAnswer(res.text),
-    rawText: res.text,
-    latencyMs,
-    framesUsed: frames.map((f) => f.t),
-    cuesUsed: cues.length,
-    model: res.model,
-    t,
-    attempts,
-    inputTokens: res.inputTokens,
-    outputTokens: res.outputTokens,
-  };
-  if (deps.cache && !deps.noCache) {
-    deps.cache.set(key, out);
-  }
-  return out;
 };

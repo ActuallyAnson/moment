@@ -1,4 +1,4 @@
-import {readFile} from 'node:fs/promises';
+import {readdir, readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {parseSrt} from './srt.ts';
 import type {Cue} from './srt.ts';
@@ -45,3 +45,19 @@ export const loadClip = async (clipsDir: string, id: string): Promise<Clip> => {
 
 export const readFrames = (clip: Clip, frames: Frame[]): Promise<Uint8Array[]> =>
   Promise.all(frames.map((f) => readFile(join(clip.dir, f.path))));
+
+// Clip ids that have an index.json (i.e. were prepared and can be asked about).
+export const listClips = async (clipsDir: string): Promise<string[]> => {
+  const out: string[] = [];
+  for (const d of await readdir(clipsDir, {withFileTypes: true})) {
+    if (d.isDirectory() && ID.test(d.name)) {
+      try {
+        await readFile(join(clipsDir, d.name, 'index.json'));
+        out.push(d.name);
+      } catch {
+        // not prepared
+      }
+    }
+  }
+  return out.sort();
+};

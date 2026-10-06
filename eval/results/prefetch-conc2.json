@@ -1,0 +1,56 @@
+{
+  "label": "conc2",
+  "N": 20,
+  "date": "2026-10-06T05:07:09.653Z",
+  "base": "http://127.0.0.1:8787",
+  "cold": {
+    "n": 20,
+    "errors": 0,
+    "p50": 2407,
+    "p95": 3505,
+    "mean": 2536,
+    "sources": {
+      "live": 20
+    }
+  },
+  "prefetched": {
+    "n": 20,
+    "errors": 0,
+    "p50": 1244,
+    "p95": 3116,
+    "mean": 893,
+    "sources": {
+      "prefetch": 9,
+      "joined": 10,
+      "live": 1
+    }
+  },
+  "joined": {
+    "n": 20,
+    "errors": 0,
+    "p50": 2536,
+    "p95": 3411,
+    "mean": 2630,
+    "sources": {
+      "joined": 10,
+      "live": 10
+    }
+  },
+  "burst": {
+    "opens": 10,
+    "prefetchStatsBefore": {
+      "started": 160,
+      "finished": 160,
+      "failed": 0,
+      "throttled": 0,
+      "cancelled": 0
+    },
+    "prefetchStatsAfter": {
+      "started": 174,
+      "finished": 172,
+      "failed": 0,
+      "throttled": 0,
+      "cancelled": 0
+    }
+  }
+}
