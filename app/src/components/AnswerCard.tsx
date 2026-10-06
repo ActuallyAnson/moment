@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import LinearGradient from '@amazon-devices/react-linear-gradient';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
-import {formatTime, windowNote} from '../format';
+import {dialogueNote, formatTime, windowNote} from '../format';
 import {colors, gradients} from '../theme';
 import {px, SAFE_X, SAFE_Y, useFont} from '../ui';
 import {FocusableButton} from './FocusableButton';
@@ -16,6 +16,9 @@ type Props = {
   onAskAgain: () => void;
   onReplay: () => void;
 };
+
+const noteFor = (s: {t: number; framesUsed?: number[]; cuesUsed?: number; source?: string}): string =>
+  s.source === 'subtitles' ? dialogueNote(s.cuesUsed) : windowNote(s.t, s.framesUsed, s.cuesUsed);
 
 export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain, onReplay}: Props) => {
   const fs = useFont();
@@ -79,12 +82,12 @@ export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain, onReplay}: Pr
           <Text style={styles.answer} numberOfLines={5} ellipsizeMode="tail">
             {state.answer}
           </Text>
-          <Text style={styles.note}>{windowNote(state.t, state.framesUsed, state.cuesUsed)}</Text>
+          <Text style={styles.note}>{noteFor(state)}</Text>
           <View style={styles.row}>
             <FocusableButton
               label="Ask another"
               preferred
-              ariaLabel={`Answer: ${state.answer.replace(/[.!?]+$/, '')}. ${windowNote(state.t, state.framesUsed, state.cuesUsed)}.`}
+              ariaLabel={`Answer: ${state.answer.replace(/[.!?]+$/, '')}. ${noteFor(state)}.`}
               onPress={onAskAgain}
             />
             <View style={styles.gap} />

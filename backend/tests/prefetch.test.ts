@@ -135,3 +135,23 @@ test('prefetch calls are single-attempt and tagged in the cost log; the viewer a
   assert.ok(csv.slice(1).every((l) => l.includes('prefetch')));
   assert.equal(calls, 4);
 });
+
+test('prefetch queues five presets; the dialogue one needs no model call, so a panel open still costs four calls', async () => {
+  assert.equal(PRESET_QUESTIONS.length, 5);
+  assert.equal(PRESET_QUESTIONS[4], 'What did they just say?');
+  const client = slow(10);
+  const deps = await mk(client);
+  const pf = new Prefetcher(deps, {concurrency: 5});
+  await pf.request('demo', 8);
+  await wait(120);
+  assert.equal(pf.stats.finished, 5);
+  assert.equal(client.calls, 4);
+});
+
+test('the app and the backend list the same preset questions (order may differ)', async () => {
+  const {readFile} = await import('node:fs/promises');
+  const src = await readFile(new URL('../../app/src/questions.ts', import.meta.url), 'utf8');
+  const block = src.slice(src.indexOf('export const QUESTIONS'), src.indexOf('] as const'));
+  const appQuestions = [...block.matchAll(/'([^']+\?)'/g)].map((m) => m[1]);
+  assert.deepEqual([...appQuestions].sort(), [...PRESET_QUESTIONS].sort());
+});

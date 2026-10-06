@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 import {cutVideo, loadClip, readFrames} from './clips.ts';
 import {parseAnswer} from './answer.ts';
-import {ACTION_CHANGE_INSTRUCTION, ACTION_VIDEO_INSTRUCTION, buildPrompt, PROMPT_VERSION, SYSTEM_PROMPT, SYSTEM_PROMPT_V3} from './prompt.ts';
+import {ACTION_CHANGE_INSTRUCTION, ACTION_VIDEO_INSTRUCTION, DIALOGUE_INSTRUCTION, buildPrompt, PROMPT_VERSION, SYSTEM_PROMPT, SYSTEM_PROMPT_V3} from './prompt.ts';
 import type {PromptVariant, PromptVersion} from './prompt.ts';
 import {selectCues, selectFrames, DEFAULT_WINDOW} from './window.ts';
 import type {WindowConfig} from './window.ts';
@@ -33,6 +33,7 @@ export type AskDeps = {
   cache?: AnswerCache;
   retry?: RetryOptions;
   promptVersion?: PromptVersion;
+  dialogueMode?: 'verbatim' | 'model'; // how the dialogue preset is answered (default: verbatim from the subtitles, no model call)
   routeTextPreset?: boolean; // the 'What does the text say?' preset gets no dialogue at all
   noCache?: boolean; // the eval harness always bypasses the cache so latency numbers are real
   presetOverrides?: Record<string, PresetOverride>;
@@ -49,7 +50,7 @@ export type AskResponse = {
   model: string;
   t: number;
   cached?: boolean;
-  source?: 'live' | 'cache' | 'prefetch' | 'joined'; // where this answer came from (honest latency reporting)
+  source?: 'live' | 'cache' | 'prefetch' | 'joined' | 'subtitles'; // where this answer came from (honest latency reporting)
   origin?: 'ask' | 'prefetch'; // who made the model call (stored with the cached entry)
   modelLatencyMs?: number; // the model call's own latency (differs from latencyMs on cache/prefetch hits)
   attempts?: number;
@@ -58,10 +59,28 @@ export type AskResponse = {
 };
 
 export const TEXT_PRESET = 'What does the text say?';
+export const DIALOGUE_PRESET = 'What did they just say?';
+export const NO_SUBTITLES_ANSWER = "This video has no subtitles, so I can't show what was said.";
+export const NO_DIALOGUE_ANSWER = 'No dialogue in the subtitles for the last 10 seconds.';
+export const MAX_DIALOGUE_CHARS = 220;
+
+// Variant A: the last (up to 3) subtitle lines, word for word, oldest first; never names a speaker. Exact by construction.
+export const verbatimDialogue = (cues: {text: string}[]): string => {
+  const lines = cues.slice(-3).map((c) => c.text.trim());
+  let out = lines.map((l) => `"${l}"`).join(' ');
+  while (out.length > MAX_DIALOGUE_CHARS && lines.length > 1) {
+    lines.shift();
+    out = lines.map((l) => `"${l}"`).join(' ');
+  }
+  if (out.length > MAX_DIALOGUE_CHARS) {
+    out = `${out.slice(0, MAX_DIALOGUE_CHARS - 2).trimEnd()}…"`;
+  }
+  return `Someone said: ${out}`;
+};
 export const DEFAULT_PROMPT_VERSION: PromptVersion = 'v3'; // chosen by the Phase 3 eval
 
 export const configHash = (cfg: WindowConfig, model: string, version: PromptVersion = 'v2', routed = false, variant?: PromptVariant): string =>
-  createHash('sha256').update(JSON.stringify({cfg, model, version, routed, variant, instr: variant ? ACTION_CHANGE_INSTRUCTION + ACTION_VIDEO_INSTRUCTION : '', system: version === 'v3' ? SYSTEM_PROMPT_V3 : SYSTEM_PROMPT, v: PROMPT_VERSION})).digest('hex').slice(0, 12);
+  createHash('sha256').update(JSON.stringify({cfg, model, version, routed, variant, instr: variant === 'dialogue' ? DIALOGUE_INSTRUCTION : variant ? ACTION_CHANGE_INSTRUCTION + ACTION_VIDEO_INSTRUCTION : '', system: version === 'v3' ? SYSTEM_PROMPT_V3 : SYSTEM_PROMPT, v: PROMPT_VERSION})).digest('hex').slice(0, 12);
 
 // Accepts {clipId, timestamp, question}; also the Phase 1 shape {question, t}.
 export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string; origin?: 'ask' | 'prefetch'} = {}): Promise<AskResponse> => {
@@ -92,6 +111,17 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
   const routedAway = (deps.routeTextPreset ?? true) && question.trim() === TEXT_PRESET;
   const cues = routedAway ? [] : selectCues(clip.cues, t, cfg.cueRadiusSec, cfg.cueAheadSec ?? cfg.cueRadiusSec);
   const version = deps.promptVersion ?? DEFAULT_PROMPT_VERSION;
+
+  if (question.trim() === DIALOGUE_PRESET) {
+    const dialogueCues = selectCues(clip.cues, t, cfg.cueRadiusSec, 0);
+    if (!clip.hasSubtitles || dialogueCues.length === 0) {
+      // No transcript to answer from: say so, without a model call (nothing can be invented, nothing is billed).
+      return {answer: clip.hasSubtitles ? NO_DIALOGUE_ANSWER : NO_SUBTITLES_ANSWER, latencyMs: 0, framesUsed: [], cuesUsed: 0, model: 'subtitles', t, source: 'subtitles'};
+    }
+    if ((deps.dialogueMode ?? 'verbatim') === 'verbatim') {
+      return {answer: verbatimDialogue(dialogueCues), latencyMs: 0, framesUsed: [], cuesUsed: dialogueCues.length, model: 'subtitles', t, source: 'subtitles'};
+    }
+  }
 
   const key = cacheKey({
     clipId,

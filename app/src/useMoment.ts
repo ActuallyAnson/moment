@@ -8,7 +8,7 @@ export type MomentState =
   | {phase: 'idle'}
   | {phase: 'asking'; t: number}
   | {phase: 'loading'; t: number; question: string}
-  | {phase: 'answer'; t: number; question: string; answer: string; framesUsed?: number[]; cuesUsed?: number}
+  | {phase: 'answer'; t: number; question: string; answer: string; framesUsed?: number[]; cuesUsed?: number; source?: string}
   | {phase: 'error'; t: number; question: string; message: string};
 
 type Controls = {currentTime: () => number; pause: () => void; play: () => void; seek: (t: number) => Promise<void>};
@@ -76,7 +76,7 @@ export const useMoment = (clipId: string, {currentTime, pause, play, seek}: Cont
       const res = await ask(clipId, question, t);
       console.log(`[moment] answer ms=${Date.now() - startedAt} source=${res.source ?? 'unknown'} clip=${clipId}`);
       if (id === requestId.current) {
-        setState({phase: 'answer', t, question, answer: res.answer, framesUsed: res.framesUsed, cuesUsed: res.cuesUsed});
+        setState({phase: 'answer', t, question, answer: res.answer, framesUsed: res.framesUsed, cuesUsed: res.cuesUsed, source: res.source});
       }
     } catch (e) {
       if (id === requestId.current) {

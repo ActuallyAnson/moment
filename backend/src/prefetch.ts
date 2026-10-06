@@ -3,8 +3,9 @@ import type {AskDeps} from './ask.ts';
 import {totalSpent} from './cost.ts';
 import {classify} from './retry.ts';
 
-// The four preset questions, in the order they are pre-answered (the focused one first).
-export const PRESET_QUESTIONS = ['What just happened?', 'Who is on screen?', 'What does the text say?', 'What should I notice here?'] as const;
+// The preset questions, in the order they are pre-answered (the focused one first). The dialogue question is answered
+// from the subtitles (no model call in the default mode), so it adds no cost; it is queued last.
+export const PRESET_QUESTIONS = ['What just happened?', 'Who is on screen?', 'What does the text say?', 'What should I notice here?', 'What did they just say?'] as const;
 
 export type PrefetchOptions = {
   enabled: boolean;
