@@ -20,7 +20,7 @@ export type ClipIndex = {
   excerpt: {startSec: number; durationSec: number};
 };
 
-export type Clip = {dir: string; index: ClipIndex; cues: Cue[]};
+export type Clip = {dir: string; index: ClipIndex; cues: Cue[]; hasSubtitles: boolean};
 
 const ID = /^[a-z0-9_-]+$/;
 const cache = new Map<string, Clip>();
@@ -37,12 +37,14 @@ export const loadClip = async (clipsDir: string, id: string): Promise<Clip> => {
   const dir = join(clipsDir, id);
   const index = JSON.parse(await readFile(join(dir, 'index.json'), 'utf8')) as ClipIndex;
   let cues: Cue[] = [];
+  let hasSubtitles = false;
   try {
     cues = parseSrt(await readFile(join(dir, 'subs.srt'), 'utf8'));
+    hasSubtitles = true;
   } catch {
     // subtitles are optional
   }
-  const clip = {dir, index, cues};
+  const clip = {dir, index, cues, hasSubtitles};
   cache.set(key, clip);
   return clip;
 };

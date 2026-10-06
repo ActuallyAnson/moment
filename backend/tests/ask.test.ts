@@ -126,3 +126,69 @@ test('an override can route one question to a different model client', async () 
   assert.equal((await handleAsk({question: 'What just happened?', t: 5}, deps)).model, 'pro');
   assert.equal((await handleAsk({question: 'Who is on screen?', t: 5}, deps)).model, 'lite');
 });
+
+test('dialogue preset: verbatim answer from the last subtitle lines, no model call, no cost row, never future dialogue', async () => {
+  const f = await makeFixture(); // subtitle cue "Hello there" at 5.0-6.0 s
+  let calls = 0;
+  const client = {mode: 'live' as const, region: 'us-east-1', answer: async () => { calls++; return {text: 'x', inputTokens: 1, outputTokens: 1, model: 'm'}; }};
+  const deps = {...f, client, defaultClip: 'demo'};
+  const r = await handleAsk({question: 'What did they just say?', t: 8}, deps);
+  assert.equal(r.answer, 'Someone said: "Hello there"');
+  assert.equal(r.source, 'subtitles');
+  assert.equal(r.cuesUsed, 1);
+  assert.equal(calls, 0);
+  const {readFile} = await import('node:fs/promises');
+  assert.equal((await readFile(f.costLogPath, 'utf8')).trim().split('\n').length, 1); // header only
+  // the cue starts at 5 s: a pause at 4 s must not show it (no future dialogue)
+  const early = await handleAsk({question: 'What did they just say?', t: 4}, deps);
+  assert.equal(early.answer, 'No dialogue in the subtitles for the last 10 seconds.');
+  assert.equal(calls, 0);
+});
+
+test('dialogue preset: a clip without subtitles says so (different from "I\'m not sure")', async () => {
+  const f = await makeFixture();
+  const {rm} = await import('node:fs/promises');
+  await rm(join(f.clipsDir, 'demo', 'subs.srt'));
+  const {loadClip} = await import('../src/clips.ts');
+  const clip = await loadClip(f.clipsDir, 'demo');
+  assert.equal(clip.hasSubtitles, false);
+  const r = await handleAsk({question: 'What did they just say?', t: 8}, {...f, client: new StubClient(0), defaultClip: 'demo'});
+  assert.equal(r.answer, "This video has no subtitles, so I can't show what was said.");
+  assert.doesNotMatch(r.answer, /not sure/i);
+  assert.equal(r.source, 'subtitles');
+});
+
+test('verbatimDialogue keeps the last 3 lines, oldest first, and caps the length', async () => {
+  const {verbatimDialogue, MAX_DIALOGUE_CHARS} = await import('../src/ask.ts');
+  const c = (text: string) => ({text});
+  assert.equal(verbatimDialogue([c('a'), c('b'), c('c'), c('d')]), 'Someone said: "b" "c" "d"');
+  const long = 'x'.repeat(150);
+  const out = verbatimDialogue([c(long), c(long)]);
+  assert.ok(out.length <= MAX_DIALOGUE_CHARS + 'Someone said: '.length);
+  assert.ok(verbatimDialogue([c('y'.repeat(400))]).endsWith('…"'));
+});
+
+test('dialogue model mode (variant B) uses at most 2 frames and the dialogue instruction; other presets do not', async () => {
+  const f = await makeFixture();
+  const seen: {user: string; system: string; images: number}[] = [];
+  const spy = {mode: 'stub' as const, region: 'none', answer: async (r: {user: string; system: string; images: unknown[]}) => { seen.push({user: r.user, system: r.system, images: r.images.length}); return {text: 'ok', inputTokens: 1, outputTokens: 1, model: 'stub'}; }};
+  const deps = {...f, client: spy, defaultClip: 'demo', dialogueMode: 'model' as const, presetOverrides: {'What did they just say?': {lookbackSec: 2, maxFrames: 2, promptVariant: 'dialogue' as const}}};
+  const r = await handleAsk({question: 'What did they just say?', t: 8}, deps);
+  assert.notEqual(r.source, 'subtitles');
+  assert.equal(seen[0].images, 2);
+  assert.match(seen[0].system, /quote the most recent lines/);
+  assert.match(seen[0].user, /Hello there/);
+  await handleAsk({question: 'Who is on screen?', t: 8}, deps);
+  assert.doesNotMatch(seen[1].system, /quote the most recent lines/);
+});
+
+test('evalstats: no-dialogue honesty is measured separately and no-dialogue items are not counted as answerable', async () => {
+  const {summarize, isNoTranscriptAnswer} = await import('../src/evalstats.ts');
+  assert.ok(isNoTranscriptAnswer("This video has no subtitles, so I can't show what was said."));
+  assert.ok(isNoTranscriptAnswer('No dialogue in the subtitles for the last 10 seconds.'));
+  assert.ok(!isNoTranscriptAnswer("I'm not sure."));
+  const row = (id: string, category: string, answer: string) => ({id, category, answer, latencyMs: 0});
+  const s = summarize([row('a', 'no dialogue', 'This video has no subtitles, so I can\'t show what was said.'), row('b', 'no dialogue', 'Someone said: "Hi"'), row('c', 'dialogue', 'Someone said: "Hi"')]);
+  assert.equal(s.noDialogueHonesty, 0.5);
+  assert.equal(s.falseAbstention, 0);
+});

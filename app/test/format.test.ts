@@ -1,4 +1,4 @@
-import {formatTime, replayTarget, spokenTime, windowNote} from '../src/format';
+import {dialogueNote, formatTime, replayTarget, spokenTime, windowNote} from '../src/format';
 
 describe('formatTime', () => {
   test('formats m:ss', () => {
@@ -40,5 +40,13 @@ describe('replayTarget', () => {
     expect(replayTarget(3)).toBe(0);
     expect(replayTarget(0)).toBe(0);
     expect(replayTarget(NaN)).toBe(0);
+  });
+});
+
+describe('dialogueNote', () => {
+  test('says it is based on subtitles, or that no picture was used', () => {
+    expect(dialogueNote(2)).toBe('Based on the subtitles from the last 10 seconds');
+    expect(dialogueNote(0)).toBe('Subtitles only: this answer does not use the picture');
+    expect(dialogueNote(undefined)).toBe('Subtitles only: this answer does not use the picture');
   });
 });

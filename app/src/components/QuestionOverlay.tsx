@@ -39,7 +39,7 @@ export const QuestionOverlay = ({t, onChoose, large, onToggleLarge}: Props) => {
       <LinearGradient colors={gradients.card} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={StyleSheet.absoluteFill} />
       <View
         accessible
-        aria-label={`Ask about this moment. Paused at ${spokenTime(t)}. Four questions. Press back to resume.`}>
+        aria-label={`Ask about this moment. Paused at ${spokenTime(t)}. ${QUESTIONS.length} questions. Press back to resume.`}>
         <Text style={styles.kicker}>PAUSED AT {formatTime(t)}</Text>
         <Text style={styles.title}>Ask about this moment</Text>
       </View>

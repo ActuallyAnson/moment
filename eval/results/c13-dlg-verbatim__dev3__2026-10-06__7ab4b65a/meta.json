@@ -1,0 +1,26 @@
+{
+  "config": "c13-dlg-verbatim",
+  "cfg": {
+    "model": "amazon.nova-lite-v1:0",
+    "region": "us-east-1",
+    "maxFrames": 5,
+    "lookbackSec": 4,
+    "cueRadiusSec": 10,
+    "cueAheadSec": 0,
+    "subtitleMode": "routed",
+    "promptVersion": "v3",
+    "temperature": 0,
+    "maxTokens": 120,
+    "description": "c7-v3 plus the dialogue question answered verbatim from the subtitles (no model call): variant A, the proposed default",
+    "dialogueMode": "verbatim"
+  },
+  "configHash": "b8e9c8c0acdd",
+  "promptVersion": "v3",
+  "gitSha": "81d4527",
+  "date": "2026-10-06T12:03:15.496Z",
+  "command": "node backend/scripts/run.ts c13-dlg-verbatim --split dev3 --repeat 2 --prod-timeouts",
+  "questions": 11,
+  "repeat": 2,
+  "stub": false,
+  "prodTimeouts": true
+}

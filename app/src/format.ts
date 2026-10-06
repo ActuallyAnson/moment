@@ -30,3 +30,7 @@ export const windowNote = (t: number, framesUsed?: number[], cuesUsed?: number):
 // Where "Replay last 10 seconds" seeks to: ten seconds before the paused moment, never before the start.
 export const REPLAY_SECONDS = 10;
 export const replayTarget = (t: number): number => (Number.isFinite(t) ? Math.max(0, t - REPLAY_SECONDS) : 0);
+
+// Provenance line for the dialogue question: it is answered from the subtitles, not from the picture.
+export const dialogueNote = (cuesUsed?: number): string =>
+  cuesUsed && cuesUsed > 0 ? 'Based on the subtitles from the last 10 seconds' : 'Subtitles only: this answer does not use the picture';

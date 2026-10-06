@@ -60,7 +60,7 @@ for (let run = 0; run < repeat; run++) {
     try {
       const r = await handleAsk(
         {clipId: q.clipId, timestamp: q.timestamp, question: q.question},
-        {client, clients, presetOverrides: cfg.presetOverrides, clipsDir: 'clips', costLogPath, window, promptVersion, routeTextPreset, noCache: true, retry: prodTimeouts ? DEFAULT_RETRY : {attemptTimeoutsMs: [8000, 8000], backoffMs: 300}},
+        {client, clients, presetOverrides: cfg.presetOverrides, dialogueMode: cfg.dialogueMode, clipsDir: 'clips', costLogPath, window, promptVersion, routeTextPreset, noCache: true, retry: prodTimeouts ? DEFAULT_RETRY : {attemptTimeoutsMs: [8000, 8000], backoffMs: 300}},
         {rid: `eval-${name}`},
       );
       const costUsd = stub ? 0 : (estimateCost(r.model, cfg.region, r.inputTokens ?? 0, r.outputTokens ?? 0) ?? 0);

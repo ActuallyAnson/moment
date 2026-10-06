@@ -2,11 +2,25 @@
 // A page with each clip's video and its questions; each question has a button that jumps to its timestamp.
 import {readFileSync, writeFileSync} from 'node:fs';
 import {loadManifest} from '../src/clipprep.ts';
+import {existsSync} from 'node:fs';
+import {parseSrt} from '../src/srt.ts';
+import {selectCues} from '../src/window.ts';
 
 type Q = {id: string; clipId: string; timestamp: number; category: string; question: string; expectedAnswer: string; confirmed: boolean; split: string};
 const splitArg = process.argv.indexOf('--split') >= 0 ? process.argv[process.argv.indexOf('--split') + 1].split(',') : null;
 const questions: Q[] = readFileSync('eval/questions.jsonl', 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((q: Q) => !splitArg || splitArg.includes(q.split));
 const manifest = loadManifest();
+const cuesFor = (q: Q): string => {
+  const f = `clips/${q.clipId}/subs.srt`;
+  if (q.category !== 'dialogue' && q.category !== 'no dialogue') {
+    return '';
+  }
+  if (!existsSync(f)) {
+    return '<br><small>(this clip has no subtitle file)</small>';
+  }
+  const cues = selectCues(parseSrt(readFileSync(f, 'utf8')), q.timestamp, 10, 0);
+  return `<br><small>Subtitle lines in the window: ${cues.length ? cues.map((c) => `[${c.start.toFixed(1)}-${c.end.toFixed(1)}] ${esc(c.text)}`).join(' &nbsp; ') : '(none)'}</small>`;
+};
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const mmss = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
@@ -17,7 +31,7 @@ const sections = Object.keys(manifest).map((id) => {
       (q) => `<tr class="${q.confirmed ? 'done' : ''}">
   <td><button onclick="jump('${id}',${q.timestamp})">&#9654; ${mmss(q.timestamp)}</button></td>
   <td><b>${esc(q.id)}</b><br><small>${esc(q.category)}<br>${esc(q.split)}</small></td>
-  <td>${esc(q.question)}</td><td>${esc(q.expectedAnswer)}</td></tr>`,
+  <td>${esc(q.question)}</td><td>${esc(q.expectedAnswer)}${cuesFor(q)}</td></tr>`,
     )
     .join('\n');
   return `<section><h2>${esc(manifest[id].title)} <small>(${id})</small></h2>

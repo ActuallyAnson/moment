@@ -2,7 +2,10 @@ import type {Cue} from './srt.ts';
 import type {Frame} from './window.ts';
 
 export type PromptVersion = 'v2' | 'v3';
-export type PromptVariant = 'action-change' | 'action-video';
+export type PromptVariant = 'action-change' | 'action-video' | 'dialogue';
+
+export const DIALOGUE_INSTRUCTION =
+  'For this question, quote the most recent lines of the dialogue transcript exactly, in order, oldest first, then stop. Name or describe the speaker only if the images make it unambiguous; otherwise say "someone". A name that appears inside a line is usually the person being spoken to, not the speaker. Never present dialogue as text seen on screen.';
 
 export const ACTION_VIDEO_INSTRUCTION =
   'For this question you get a short video clip that ends at the pause. Say what happens in it: who moves, where, and what they do. Describe the motion, not just the scene.';
@@ -58,7 +61,7 @@ const buildPromptV3 = (args: {question: string; t: number; frames: Frame[]; cues
     lines.push('No dialogue transcript is provided.');
   }
   lines.push(`Question: ${question}`);
-  return {system: variant ? `${SYSTEM_PROMPT_V3} ${variant === 'action-video' ? ACTION_VIDEO_INSTRUCTION : ACTION_CHANGE_INSTRUCTION}` : SYSTEM_PROMPT_V3, user: lines.join('\n')};
+  return {system: variant ? `${SYSTEM_PROMPT_V3} ${variant === 'action-video' ? ACTION_VIDEO_INSTRUCTION : variant === 'dialogue' ? DIALOGUE_INSTRUCTION : ACTION_CHANGE_INSTRUCTION}` : SYSTEM_PROMPT_V3, user: lines.join('\n')};
 };
 
 export const buildPrompt = (

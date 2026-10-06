@@ -190,3 +190,33 @@ f0c78b04ee,correct,assistant-graded holdout2
 f1d6f71525,wrong,assistant-graded holdout2
 f340735b38,correct,assistant-graded holdout2
 f4ae0b7a8a,partial,assistant-graded holdout2
+1502462bb0,correct,assistant-graded dev3
+20a77db7e9,correct,assistant-graded dev3
+337c177c53,correct,assistant-graded dev3
+3405eea7ae,correct,assistant-graded dev3
+3b4fdeed69,correct,assistant-graded dev3
+430906019a,correct,assistant-graded dev3
+50fa0b4c20,correct,assistant-graded dev3
+5bb5d44762,correct,assistant-graded dev3
+70b3685ca8,correct,assistant-graded dev3
+722f49f87f,partial,assistant-graded dev3
+7d1a1684b0,partial,assistant-graded dev3
+828f4e5c7f,correct,assistant-graded dev3
+8bc0172291,correct,assistant-graded dev3
+99c6079d46,correct,assistant-graded dev3
+b4abea8038,correct,assistant-graded dev3
+bfc54a98c6,correct,assistant-graded dev3
+ce348bd690,correct,assistant-graded dev3
+fbc4abfcae,correct,assistant-graded dev3
+fd53845a56,correct,assistant-graded dev3
+b2c031d14c,correct,assistant-graded holdout3 (matches the expected lines exactly)
+f06b11d9cd,correct,assistant-graded holdout3 (matches the expected lines exactly)
+58196f6b5d,correct,assistant-graded holdout3 (matches the expected lines exactly)
+8cf1e652c5,correct,assistant-graded holdout3 (matches the expected lines exactly)
+7f286c45dd,correct,assistant-graded holdout3 (matches the expected lines exactly)
+f943ae9b83,correct,assistant-graded holdout3 (matches the expected lines exactly)
+4ea3910f20,correct,assistant-graded holdout3 (matches the expected lines exactly)
+77cb7db440,correct,assistant-graded holdout3 (matches the expected lines exactly)
+fb4b80e7df,correct,assistant-graded holdout3 (matches the expected lines exactly)
+2069ab4343,correct,assistant-graded holdout3 (matches the expected lines exactly)
+456388088f,correct,assistant-graded holdout3 (matches the expected lines exactly)

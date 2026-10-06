@@ -3,8 +3,9 @@ import type {AskDeps} from './ask.ts';
 import {totalSpent} from './cost.ts';
 import {classify} from './retry.ts';
 
-// The four preset questions, in the order they are pre-answered (the focused one first).
-export const PRESET_QUESTIONS = ['What just happened?', 'Who is on screen?', 'What does the text say?', 'What should I notice here?'] as const;
+// The preset questions, in the order they are pre-answered (the focused one first). The dialogue question is answered
+// from the subtitles (no model call in the default mode), so it adds no cost; it is queued last.
+export const PRESET_QUESTIONS = ['What just happened?', 'Who is on screen?', 'What does the text say?', 'What should I notice here?', 'What did they just say?'] as const;
 
 export type PrefetchOptions = {
   enabled: boolean;
@@ -100,6 +101,7 @@ export class Prefetcher {
         })
         .catch((e: unknown) => {
           this.stats.failed++;
+          console.warn(JSON.stringify({ts: new Date().toISOString(), prefetchFailed: true, clip: job.clipId, t: job.t, q: job.question, error: String((e as Error)?.message ?? e)}));
           const kind = classify((e as {cause?: unknown}).cause ?? e);
           const throttled = kind === 'throttle' || /throttl/i.test(String((e as Error)?.message ?? ''));
           if (throttled) {

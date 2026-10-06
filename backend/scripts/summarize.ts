@@ -55,6 +55,13 @@ if (repeated.length) {
     lines.push(`| ${r.meta.config} | ${diff} of ${a.size} |`);
   }
 }
+const withNd = sums.filter((x) => x.s.noDialogueHonesty !== null);
+if (withNd.length) {
+  lines.push('', '## No-dialogue honesty (deterministic plumbing check, not model accuracy)', '', '| config | answers that honestly say there is no transcript |', '|---|---|');
+  for (const {r, s} of withNd) {
+    lines.push(`| ${r.meta.config} | ${pct(s.noDialogueHonesty as number)} |`);
+  }
+}
 const ungraded = sums.reduce((s, x) => s + (x.s.n - x.s.graded), 0);
 lines.push('', `Ungraded answers: ${ungraded}. Runs: ${runs.map((r) => `${r.dir} (${r.meta.command})`).join('; ')}`);
 writeFileSync(outFile, lines.join('\n') + '\n');
