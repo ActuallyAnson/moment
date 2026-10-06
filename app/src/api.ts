@@ -1,5 +1,4 @@
 import {API_BASE, REQUEST_TIMEOUT_MS} from './config';
-import {CLIP_ID} from './clip';
 
 export type AskResult = {answer: string; t: number; latencyMs?: number; framesUsed?: number[]; cuesUsed?: number; model?: string};
 
@@ -21,14 +20,14 @@ const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
     );
   });
 
-export const ask = async (question: string, t: number): Promise<AskResult> => {
+export const ask = async (clipId: string, question: string, t: number): Promise<AskResult> => {
   try {
     const requestId = `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     const res = await withTimeout(
       fetch(`${API_BASE}/ask`, {
         method: 'POST',
         headers: {'content-type': 'application/json', 'x-request-id': requestId},
-        body: JSON.stringify({clipId: CLIP_ID, timestamp: t, question}),
+        body: JSON.stringify({clipId, timestamp: t, question}),
       }),
       REQUEST_TIMEOUT_MS,
     );
@@ -45,6 +44,9 @@ export const ask = async (question: string, t: number): Promise<AskResult> => {
       }
       if (kind === 'budget') {
         throw new AskError('Answers are paused right now.');
+      }
+      if (kind === 'clip') {
+        throw new AskError("This clip isn't set up on the answer service.");
       }
       if (res.status === 400) {
         throw new AskError("That question couldn't be sent.");

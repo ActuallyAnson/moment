@@ -1,12 +1,9 @@
 import {useCallback, useEffect, useRef} from 'react';
 import {VideoPlayer} from '@amazon-devices/react-native-w3cmedia';
 
-// Local clip bundled in the app package (app/assets/raw/clip.mp4).
-const CLIP_SRC = '/pkg/assets/raw/clip.mp4';
-
-// Owns the video player. Playback starts only once the surface exists AND the
+// Owns the video player for one bundled clip file. Playback starts only once the surface exists AND the
 // metadata has loaded; calling play() earlier silently does nothing.
-export const usePlayer = () => {
+export const usePlayer = (src: string) => {
   const player = useRef<VideoPlayer | null>(null);
   const surfaceReady = useRef(false);
   const metaReady = useRef(false);
@@ -24,7 +21,7 @@ export const usePlayer = () => {
     player.current = p;
     p.initialize()
       .then(() => {
-        p.src = CLIP_SRC;
+        p.src = src;
         p.addEventListener('loadedmetadata', () => {
           metaReady.current = true;
           tryStart();
@@ -32,7 +29,17 @@ export const usePlayer = () => {
         p.addEventListener('error', () => console.log('[moment] player error', JSON.stringify(p.error)));
       })
       .catch((e: unknown) => console.log('[moment] player init failed', String(e)));
-  }, [tryStart]);
+    // Switching clips remounts the player screen: stop and release the old player.
+    return () => {
+      try {
+        p.pause();
+        p.deinitialize().catch(() => undefined);
+      } catch (e) {
+        console.log('[moment] player cleanup failed', String(e));
+      }
+      player.current = null;
+    };
+  }, [src, tryStart]);
 
   const onSurfaceViewCreated = useCallback(
     (handle: string) => {

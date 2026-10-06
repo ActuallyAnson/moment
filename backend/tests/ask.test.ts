@@ -88,3 +88,14 @@ test('routed text preset gets no dialogue; ahead=0 drops future cues', async () 
   assert.match(seen[1], /Hello there/);
   assert.match(seen[2], /No dialogue transcript is provided/); // cue starts at 5 s, after the pause at 4 s
 });
+
+test('unknown clip gives an AskInputError with code "clip"; listClips only lists prepared clips', async () => {
+  const f = await makeFixture();
+  await assert.rejects(
+    handleAsk({clipId: 'nope', timestamp: 1, question: 'q'}, {...f, client: new StubClient(0)}),
+    (e: unknown) => e instanceof AskInputError && e.code === 'clip',
+  );
+  await assert.rejects(handleAsk({clipId: 'demo', timestamp: -1, question: 'q'}, {...f, client: new StubClient(0)}), (e: unknown) => e instanceof AskInputError && e.code === 'input');
+  const {listClips} = await import('../src/clips.ts');
+  assert.deepEqual(await listClips(f.clipsDir), ['demo']);
+});

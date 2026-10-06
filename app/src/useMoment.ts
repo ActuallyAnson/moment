@@ -14,12 +14,12 @@ export type MomentState =
 type Controls = {currentTime: () => number; pause: () => void; play: () => void; seek: (t: number) => Promise<void>};
 
 // Remote behaviour (acts on key-up so the release of the opening key cannot hit the new focus target):
-//   idle:            Menu / Select open the overlay and pause; Back is left to the OS; other keys are the player's.
+//   idle:            Menu / Select open the overlay and pause; Back returns to the clip picker; other keys are the player's.
 //   asking:          Select picks the focused question; Menu / Back / Play-Pause close and resume.
 //   loading:         Back / Play-Pause cancel and resume (a late reply is dropped).
 //   answer / error:  Select presses the focused button; Menu re-opens the questions at the same moment;
 //                    Rewind replays the last 10 s; Back / Play-Pause close and resume.
-export const useMoment = ({currentTime, pause, play, seek}: Controls) => {
+export const useMoment = (clipId: string, {currentTime, pause, play, seek}: Controls, onExit?: () => void) => {
   const [state, setState] = useState<MomentState>({phase: 'idle'});
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -66,7 +66,7 @@ export const useMoment = ({currentTime, pause, play, seek}: Controls) => {
     const id = ++requestId.current;
     setState({phase: 'loading', t, question});
     try {
-      const res = await ask(question, t);
+      const res = await ask(clipId, question, t);
       if (id === requestId.current) {
         setState({phase: 'answer', t, question, answer: res.answer, framesUsed: res.framesUsed, cuesUsed: res.cuesUsed});
       }
@@ -76,7 +76,7 @@ export const useMoment = ({currentTime, pause, play, seek}: Controls) => {
         setState({phase: 'error', t, question, message});
       }
     }
-  }, []);
+  }, [clipId]);
 
   useTVEventHandler((evt: {eventType?: string; eventKeyAction?: number}) => {
     if (evt.eventKeyAction !== 1) {
@@ -107,13 +107,17 @@ export const useMoment = ({currentTime, pause, play, seek}: Controls) => {
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (stateRef.current.phase === 'idle') {
-        return false; // let the OS handle Back from the player
+        if (onExit) {
+          onExit(); // Back from the playing video returns to the clip picker
+          return true;
+        }
+        return false; // otherwise let the OS handle Back
       }
       dismiss();
       return true;
     });
     return () => sub.remove();
-  }, [dismiss]);
+  }, [dismiss, onExit]);
 
   return {state, choose, dismiss, askAgain, replay, toast};
 };

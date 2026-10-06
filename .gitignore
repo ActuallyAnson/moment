@@ -7,7 +7,8 @@ build/
 clips/*/clip.mp4
 clips/*/frames/
 clips/*/source-en.srt
-app/assets/raw/clip.mp4
+app/assets/raw/*.mp4
+app/assets/raw/*.jpg
 eval/results/stub-*
 clips/.cache/
 eval/review.html
