@@ -1,0 +1,56 @@
+{
+  "label": "five-presets",
+  "N": 20,
+  "date": "2026-10-06T12:04:22.210Z",
+  "base": "http://127.0.0.1:8787",
+  "concurrency": "4",
+  "cold": {
+    "n": 20,
+    "errors": 0,
+    "p50": 2354,
+    "p95": 3360,
+    "mean": 2503,
+    "sources": {
+      "live": 20
+    }
+  },
+  "prefetched": {
+    "n": 20,
+    "errors": 0,
+    "p50": 2,
+    "p95": 4245,
+    "mean": 350,
+    "sources": {
+      "prefetch": 16,
+      "joined": 3,
+      "live": 1
+    }
+  },
+  "joined": {
+    "n": 20,
+    "errors": 0,
+    "p50": 2945,
+    "p95": 4192,
+    "mean": 2904,
+    "sources": {
+      "joined": 20
+    }
+  },
+  "burst": {
+    "opens": 10,
+    "prefetchStatsBefore": {
+      "started": 200,
+      "finished": 199,
+      "failed": 1,
+      "throttled": 0,
+      "cancelled": 0
+    },
+    "prefetchStatsAfter": {
+      "started": 231,
+      "finished": 226,
+      "failed": 1,
+      "throttled": 0,
+      "cancelled": 0
+    }
+  }
+}

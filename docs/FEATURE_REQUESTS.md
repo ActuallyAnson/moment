@@ -19,3 +19,5 @@ Each request comes from a real friction-log entry (`docs/FRICTION_LOG.md`).
 | 13 | Note on the Converse API page that it is authorized by `bedrock:InvokeModel` (#13) | The policy editor rejects the obvious action name | nice-to-have |
 | 14 | Document local-file playback and the `/pkg/assets/raw` convention (#8) | The only source was a community answer | nice-to-have |
 | 15 | Document where release-build JS `console.log` output goes on the VVD, or add a `vega logs` command (#19) | Without it an app cannot report its own timings | nice-to-have |
+| 16 | A Vega player API (or documented w3cmedia text-track access) to read the active caption cues at a given time | Lets apps answer "what did they just say?" for streamed content that carries captions, instead of needing a separate subtitle file | important |
+| 17 | Audio input for Nova models through the Converse API, or a documented batch speech-to-text path in Bedrock | Lets apps describe speech and sounds for deaf and hard-of-hearing viewers without adding a separate service | nice-to-have |

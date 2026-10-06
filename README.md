@@ -8,7 +8,7 @@
 |---|---|
 | ![Question panel](docs/img/overlay.png) | ![Answer card](docs/img/answer.png) |
 
-From the answer you can **ask another** question about the same moment, **replay the last 10 seconds**, or resume. A start screen lets you **pick a clip**. When you open the question panel, the four preset questions are **pre-answered in the background**, so a question asked a few seconds later appears almost instantly.
+From the answer you can **ask another** question about the same moment, **replay the last 10 seconds**, or resume. A start screen lets you **pick a clip**. A fifth question, **"What did they just say?"**, quotes the clip's last subtitle lines word for word (no AI call, no cost) and says honestly when a clip has no subtitles; it may help people who are deaf or hard of hearing but has not been tested with them. When you open the question panel, the preset questions are **pre-answered in the background**, so a question asked a few seconds later appears almost instantly.
 
 Moment is **AI-enhanced viewing**: useful when you looked away, are multitasking, or can't read small on-screen text. It has screen-reader labels, but it has **not** been tested with blind or low-vision viewers, and we make no claim that it is built for them.
 
@@ -67,21 +67,24 @@ Paired by question, the default beat c4 on 5 questions and lost none (30 ties). 
 
 **An attempt to improve action answers did not work.** Three ideas for "What just happened?" (a "what changed" prompt, 8 frames over 8 s, and sending the last 4 s as a video clip) were tried on the development questions with production timeouts; none beat the default (55% vs 45% / 36% / 36% on 11 items), and two added timeouts or invented actions, so the default was kept (`eval/results/action-experiments.md`).
 
-**Latency with and without prefetch** (live backend, 20 distinct moments each, `node backend/scripts/measure-prefetch.ts`, results in `eval/results/prefetch-conc*.json`): a cold answer takes p50 2.4 s / p95 3.5 s. If the viewer picks a question 3 s after the panel opens, the answer is already there (prefetch concurrency 4): p50 6 ms / p95 0.8 s, 19 of 20 served from prefetch; at concurrency 2 it was p50 1.2 s. Asking immediately joins the call in flight (no second model call). Prefetch costs about $0.0012 per panel open (4 calls). No throttling in 106 prefetch calls including a burst of rapid opens.
+**Latency with and without prefetch** (live backend, 20 distinct moments each, `node backend/scripts/measure-prefetch.ts`, results in `eval/results/prefetch-*.json`): a cold answer takes p50 2.4 s / p95 3.4-3.5 s. If the viewer picks a question 3 s after the panel opens, the answer is usually already there (prefetch concurrency 4): first run p50 6 ms / p95 0.8 s with 19 of 20 served from prefetch; re-measured after adding the dialogue question p50 2 ms / p95 4.2 s with 16 of 20 from prefetch (the rest joined a call still running, or one made its own call after a prefetch call failed). So the typical case is instant but the worst case is no better than a cold answer. At concurrency 2 the median was 1.2 s. Asking immediately joins the call in flight (no second model call). Prefetch costs about $0.0012 per panel open (4 calls). No throttling in 356 prefetch calls across both runs including bursts of rapid opens; 1 of 250 calls in the second run failed (not a throttle; the cause was not logged, so failures are now logged).
 
-Total live spend for everything above: **873 live calls, $0.4086** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
+**Dialogue question.** "What did they just say?" is answered from the subtitles with no model call. On 22 new owner-confirmed questions it was exact (11 of 11 on the development split, 11 of 11 on the locked split, each including 3 honest "no subtitles / no dialogue" cases), and a Nova Lite alternative that also looked at 2 frames was worse (88% vs 100%, dropped the newest line once), so it was not used. Because the answer copies the subtitle text this mainly checks the window rule and the honest no-subtitles answers, not model skill; details and caveats in `eval/results/dialogue-experiments.md`. Not tested with real audio or with deaf or hard-of-hearing viewers.
+
+Total live spend for everything above: **1144 live calls, $0.4799** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
 
 Reproduce: `AWS_PROFILE=<profile> AWS_REGION=us-east-1 node backend/scripts/run.ts c7-v3 --split test`, then `node backend/scripts/grade-page.ts <runDir>` (a blind grading page), `node backend/scripts/grade-import.ts <grades.csv>` and `node backend/scripts/summarize.ts <runDirs>`. Raw answers and the grades we used are committed under `eval/`.
 
 ## Tests
 
-`cd backend && npm test` (51 tests: window selection, subtitles, prompt, retry and timeouts, cache, prefetch and in-flight joining, per-question overrides, cost guard, eval statistics) and `cd app && npm test` (13 tests: contrast ratios, spoken time, answer note, replay target, bundled clips).
+`cd backend && npm test` (59 tests: window selection, subtitles, prompt, retry and timeouts, cache, prefetch and in-flight joining, per-question overrides, cost guard, eval statistics) and `cd app && npm test` (15 tests: contrast ratios, spoken time, answer note, replay target, bundled clips).
 
 ## Limitations
 
 - Action questions ("What just happened?") are the weakest category (63% on the first test split, 4 questions; 54% on the second held-out check, 12 questions); answers are often right about the scene but miss or invent what changed. Three attempted fixes did not help.
 - The "What does the text say?" question can return text that was on screen a few seconds earlier, and counting can include people from earlier frames in the window.
 - Pre-cut CC-BY clips only: frames are extracted offline and the backend runs on the development Mac, not a live stream or a real TV.
+- Audio is not analysed: answers use frames and subtitles only, all clips are silent (soundtrack licences), and the dialogue question needs a subtitle file (only two of the six clips have one). Transcribing speech or describing sounds would need a transcription service or model and audio we may redistribute; it is future work.
 - Screen-reader labels exist; actual VoiceView speech on the emulator is not verified (friction log #18). User tests with outside viewers have a script (`docs/USER_TESTS.md`); results are added there only if the sessions are run.
 - Identity questions describe appearance; the model is told not to identify real people from faces.
 

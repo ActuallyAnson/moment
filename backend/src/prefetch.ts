@@ -101,6 +101,7 @@ export class Prefetcher {
         })
         .catch((e: unknown) => {
           this.stats.failed++;
+          console.warn(JSON.stringify({ts: new Date().toISOString(), prefetchFailed: true, clip: job.clipId, t: job.t, q: job.question, error: String((e as Error)?.message ?? e)}));
           const kind = classify((e as {cause?: unknown}).cause ?? e);
           const throttled = kind === 'throttle' || /throttl/i.test(String((e as Error)?.message ?? ''));
           if (throttled) {
