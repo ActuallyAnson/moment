@@ -2,10 +2,13 @@
 // Joins raw answers with the owner's grades (eval/grades/manual.csv) and writes eval/results/summary.md.
 import {existsSync, readFileSync, writeFileSync} from 'node:fs';
 import {parseCsv} from '../src/csv.ts';
-import {gradeKey, paired, summarize} from '../src/evalstats.ts';
+import {gradeKey, normalizeAnswer, paired, summarize} from '../src/evalstats.ts';
 import type {Grade, Row} from '../src/evalstats.ts';
 
-const dirs = process.argv.slice(2);
+const argv = process.argv.slice(2);
+const outAt = argv.indexOf('--out');
+const outFile = outAt >= 0 ? argv[outAt + 1] : 'eval/results/summary.md';
+const dirs = argv.filter((a, i) => !a.startsWith('--') && (outAt < 0 || i !== outAt + 1));
 if (!dirs.length) {
   console.error('usage: summarize.ts <runDir> ...');
   process.exit(1);
@@ -42,7 +45,17 @@ if (runs.length > 1) {
     lines.push(`| ${r.meta.config} | ${p.wins} | ${p.losses} | ${p.ties} |`);
   }
 }
+const repeated = runs.filter((r) => r.all.some((x) => x.run > 0));
+if (repeated.length) {
+  lines.push('', '## Noise floor (identical runs, repeat)', '', '| config | questions whose answer text differs between run 0 and run 1 |', '|---|---|');
+  for (const r of repeated) {
+    const a = new Map(r.all.filter((x) => x.run === 0).map((x) => [x.id, normalizeAnswer(x.answer ?? '')]));
+    const b = new Map(r.all.filter((x) => x.run === 1).map((x) => [x.id, normalizeAnswer(x.answer ?? '')]));
+    const diff = [...a.keys()].filter((id) => b.has(id) && a.get(id) !== b.get(id)).length;
+    lines.push(`| ${r.meta.config} | ${diff} of ${a.size} |`);
+  }
+}
 const ungraded = sums.reduce((s, x) => s + (x.s.n - x.s.graded), 0);
 lines.push('', `Ungraded answers: ${ungraded}. Runs: ${runs.map((r) => `${r.dir} (${r.meta.command})`).join('; ')}`);
-writeFileSync('eval/results/summary.md', lines.join('\n') + '\n');
+writeFileSync(outFile, lines.join('\n') + '\n');
 console.log(lines.join('\n'));

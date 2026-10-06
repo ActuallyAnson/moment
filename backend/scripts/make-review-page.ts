@@ -1,10 +1,11 @@
-// Usage: node backend/scripts/make-review-page.ts   -> writes eval/review.html (local file, not committed)
+// Usage: node backend/scripts/make-review-page.ts [--split dev2,holdout2]   -> writes eval/review.html (local file, not committed)
 // A page with each clip's video and its questions; each question has a button that jumps to its timestamp.
 import {readFileSync, writeFileSync} from 'node:fs';
 import {loadManifest} from '../src/clipprep.ts';
 
 type Q = {id: string; clipId: string; timestamp: number; category: string; question: string; expectedAnswer: string; confirmed: boolean; split: string};
-const questions: Q[] = readFileSync('eval/questions.jsonl', 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+const splitArg = process.argv.indexOf('--split') >= 0 ? process.argv[process.argv.indexOf('--split') + 1].split(',') : null;
+const questions: Q[] = readFileSync('eval/questions.jsonl', 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((q: Q) => !splitArg || splitArg.includes(q.split));
 const manifest = loadManifest();
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const mmss = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;

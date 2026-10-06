@@ -1,0 +1,20 @@
+{
+  "model": "amazon.nova-lite-v1:0",
+  "region": "us-east-1",
+  "maxFrames": 5,
+  "lookbackSec": 4,
+  "cueRadiusSec": 10,
+  "cueAheadSec": 0,
+  "subtitleMode": "routed",
+  "promptVersion": "v3",
+  "temperature": 0,
+  "maxTokens": 120,
+  "description": "c9 with 8 frames over the last 8 s for 'What just happened?' only (needs to fit the 4 s + 3 s production timeouts)",
+  "presetOverrides": {
+    "What just happened?": {
+      "promptVariant": "action-change",
+      "lookbackSec": 8,
+      "maxFrames": 8
+    }
+  }
+}

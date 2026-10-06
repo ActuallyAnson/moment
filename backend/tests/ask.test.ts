@@ -99,3 +99,30 @@ test('unknown clip gives an AskInputError with code "clip"; listClips only lists
   const {listClips} = await import('../src/clips.ts');
   assert.deepEqual(await listClips(f.clipsDir), ['demo']);
 });
+
+test('preset overrides change the window, the prompt and the cache key; other questions are untouched', async () => {
+  const f = await makeFixture();
+  const seen: {user: string; system: string; images: number}[] = [];
+  const spy = {mode: 'stub' as const, region: 'none', answer: async (r: {user: string; system: string; images: unknown[]}) => { seen.push({user: r.user, system: r.system, images: r.images.length}); return {text: 'ok', inputTokens: 1, outputTokens: 1, model: 'stub'}; }};
+  const {configHash} = await import('../src/ask.ts');
+  const {DEFAULT_WINDOW} = await import('../src/window.ts');
+  const deps = {...f, client: spy, defaultClip: 'demo', presetOverrides: {'What just happened?': {lookbackSec: 8, maxFrames: 8, promptVariant: 'action-change' as const}}};
+  await handleAsk({question: 'What just happened?', t: 9.5}, deps);
+  await handleAsk({question: 'Who is on screen?', t: 9.5}, deps);
+  assert.equal(seen[0].images, 8);
+  assert.match(seen[0].user, /s before the pause\)/);
+  assert.match(seen[0].system, /what changed between the first and the last image/);
+  assert.equal(seen[1].images, 5);
+  assert.doesNotMatch(seen[1].system, /what changed between/);
+  // different overrides must never share a cache key / hash
+  assert.notEqual(configHash(DEFAULT_WINDOW, 'stub', 'v3', true), configHash(DEFAULT_WINDOW, 'stub', 'v3', true, 'action-change'));
+  assert.notEqual(configHash({...DEFAULT_WINDOW, maxFrames: 8}, 'stub', 'v3', true), configHash(DEFAULT_WINDOW, 'stub', 'v3', true));
+});
+
+test('an override can route one question to a different model client', async () => {
+  const f = await makeFixture();
+  const mkc = (model: string) => ({mode: 'stub' as const, region: 'none', answer: async () => ({text: model, inputTokens: 1, outputTokens: 1, model})});
+  const deps = {...f, client: mkc('lite'), clients: {pro: mkc('pro')}, defaultClip: 'demo', presetOverrides: {'What just happened?': {model: 'pro'}}};
+  assert.equal((await handleAsk({question: 'What just happened?', t: 5}, deps)).model, 'pro');
+  assert.equal((await handleAsk({question: 'Who is on screen?', t: 5}, deps)).model, 'lite');
+});

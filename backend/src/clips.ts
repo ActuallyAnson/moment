@@ -1,4 +1,8 @@
-import {readdir, readFile} from 'node:fs/promises';
+import {readdir, readFile, rm} from 'node:fs/promises';
+import {execFile} from 'node:child_process';
+import {tmpdir} from 'node:os';
+import {randomUUID} from 'node:crypto';
+import {promisify} from 'node:util';
 import {join} from 'node:path';
 import {parseSrt} from './srt.ts';
 import type {Cue} from './srt.ts';
@@ -60,4 +64,17 @@ export const listClips = async (clipsDir: string): Promise<string[]> => {
     }
   }
   return out.sort();
+};
+
+const run = promisify(execFile);
+
+// Cut [start, start+dur) from a prepared clip as a small silent mp4 (for models that take video input).
+export const cutVideo = async (clipFile: string, start: number, dur: number): Promise<Uint8Array> => {
+  const out = join(tmpdir(), `moment-${randomUUID()}.mp4`);
+  try {
+    await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', start.toFixed(2), '-t', dur.toFixed(2), '-i', clipFile, '-an', '-vf', 'scale=512:-2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '28', '-movflags', '+faststart', out]);
+    return await readFile(out);
+  } finally {
+    await rm(out, {force: true});
+  }
 };

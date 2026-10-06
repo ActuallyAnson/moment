@@ -1,0 +1,18 @@
+{
+  "model": "amazon.nova-lite-v1:0",
+  "region": "us-east-1",
+  "maxFrames": 5,
+  "lookbackSec": 4,
+  "cueRadiusSec": 10,
+  "cueAheadSec": 0,
+  "subtitleMode": "routed",
+  "promptVersion": "v3",
+  "temperature": 0,
+  "maxTokens": 120,
+  "description": "c7-v3 plus, for 'What just happened?' only, the 'say what changed between the first and last image' instruction and 'N s before the pause' image labels (same 5-frame / 4 s window)",
+  "presetOverrides": {
+    "What just happened?": {
+      "promptVariant": "action-change"
+    }
+  }
+}
