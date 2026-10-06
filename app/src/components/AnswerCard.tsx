@@ -14,9 +14,10 @@ type Props = {
   onRetry: () => void;
   onDismiss: () => void;
   onAskAgain: () => void;
+  onReplay: () => void;
 };
 
-export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain}: Props) => {
+export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain, onReplay}: Props) => {
   const fs = useFont();
   const [slow, setSlow] = useState(false);
   useEffect(() => {
@@ -86,6 +87,8 @@ export const AnswerCard = ({state, onRetry, onDismiss, onAskAgain}: Props) => {
               ariaLabel={`Answer: ${state.answer.replace(/[.!?]+$/, '')}. ${windowNote(state.t, state.framesUsed, state.cuesUsed)}.`}
               onPress={onAskAgain}
             />
+            <View style={styles.gap} />
+            <FocusableButton label="Replay 10 s" ariaLabel="Replay the last 10 seconds" onPress={onReplay} />
             <View style={styles.gap} />
             <FocusableButton label="Resume" onPress={onDismiss} />
           </View>

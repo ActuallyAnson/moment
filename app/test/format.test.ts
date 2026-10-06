@@ -1,4 +1,4 @@
-import {formatTime, spokenTime, windowNote} from '../src/format';
+import {formatTime, replayTarget, spokenTime, windowNote} from '../src/format';
 
 describe('formatTime', () => {
   test('formats m:ss', () => {
@@ -30,5 +30,15 @@ describe('windowNote', () => {
     expect(windowNote(5, undefined, undefined)).toBe('Based on this moment');
     expect(windowNote(5, [], 3)).toBe('Based on this moment');
     expect(windowNote(5, [4], 0)).toBe('Based on the last 1 second of video');
+  });
+});
+
+describe('replayTarget', () => {
+  test('ten seconds back, clamped at the start, safe for bad input', () => {
+    expect(replayTarget(25)).toBe(15);
+    expect(replayTarget(10)).toBe(0);
+    expect(replayTarget(3)).toBe(0);
+    expect(replayTarget(0)).toBe(0);
+    expect(replayTarget(NaN)).toBe(0);
   });
 });

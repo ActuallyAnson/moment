@@ -49,7 +49,29 @@ export const usePlayer = () => {
     player.current?.clearSurfaceHandle(null as unknown as string);
   }, []);
 
+  // Seek by setting currentTime; resolve when the player reports 'seeked' (or after 1.5 s, whichever is first).
+  const seek = useCallback((t: number): Promise<void> => {
+    const p = player.current;
+    if (!p) {
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (!done) {
+          done = true;
+          p.removeEventListener('seeked', finish);
+          resolve();
+        }
+      };
+      p.addEventListener('seeked', finish);
+      setTimeout(finish, 1500);
+      p.currentTime = t;
+    });
+  }, []);
+
   return {
+    seek,
     currentTime: () => player.current?.currentTime ?? 0,
     pause: () => player.current?.pause(),
     play: () => player.current?.play(),

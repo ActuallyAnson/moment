@@ -2,6 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {BackHandler} from 'react-native';
 import {useTVEventHandler} from '@amazon-devices/react-native-kepler';
 import {ask, AskError} from './api';
+import {formatTime, replayTarget} from './format';
 
 export type MomentState =
   | {phase: 'idle'}
@@ -10,19 +11,20 @@ export type MomentState =
   | {phase: 'answer'; t: number; question: string; answer: string; framesUsed?: number[]; cuesUsed?: number}
   | {phase: 'error'; t: number; question: string; message: string};
 
-type Controls = {currentTime: () => number; pause: () => void; play: () => void};
+type Controls = {currentTime: () => number; pause: () => void; play: () => void; seek: (t: number) => Promise<void>};
 
 // Remote behaviour (acts on key-up so the release of the opening key cannot hit the new focus target):
 //   idle:            Menu / Select open the overlay and pause; Back is left to the OS; other keys are the player's.
 //   asking:          Select picks the focused question; Menu / Back / Play-Pause close and resume.
 //   loading:         Back / Play-Pause cancel and resume (a late reply is dropped).
 //   answer / error:  Select presses the focused button; Menu re-opens the questions at the same moment;
-//                    Back / Play-Pause close and resume.
-export const useMoment = ({currentTime, pause, play}: Controls) => {
+//                    Rewind replays the last 10 s; Back / Play-Pause close and resume.
+export const useMoment = ({currentTime, pause, play, seek}: Controls) => {
   const [state, setState] = useState<MomentState>({phase: 'idle'});
   const stateRef = useRef(state);
   stateRef.current = state;
   const requestId = useRef(0);
+  const [toast, setToast] = useState<string | null>(null);
 
   const open = useCallback(() => {
     // Read the time BEFORE pausing: currentTime has been observed to read 0 right after pause().
@@ -36,6 +38,21 @@ export const useMoment = ({currentTime, pause, play}: Controls) => {
     setState({phase: 'idle'});
     play();
   }, [play]);
+
+  // "Replay 10 s": seek back from the paused moment (stored t, not a fresh read), resume, and say so briefly.
+  const replay = useCallback(async () => {
+    const s = stateRef.current;
+    if (s.phase !== 'answer' && s.phase !== 'error') {
+      return;
+    }
+    requestId.current += 1;
+    const target = replayTarget(s.t);
+    await seek(target);
+    play();
+    setState({phase: 'idle'});
+    setToast(`Replaying from ${formatTime(target)}`);
+    setTimeout(() => setToast(null), 2500);
+  }, [seek, play]);
 
   const askAgain = useCallback(() => {
     const s = stateRef.current;
@@ -73,7 +90,9 @@ export const useMoment = ({currentTime, pause, play}: Controls) => {
       }
       return;
     }
-    if (type === 'menu') {
+    if (type === 'rewind' && (phase === 'answer' || phase === 'error')) {
+      replay();
+    } else if (type === 'menu') {
       if (phase === 'asking') {
         dismiss();
       } else if (phase === 'answer' || phase === 'error') {
@@ -96,5 +115,5 @@ export const useMoment = ({currentTime, pause, play}: Controls) => {
     return () => sub.remove();
   }, [dismiss]);
 
-  return {state, choose, dismiss, askAgain};
+  return {state, choose, dismiss, askAgain, replay, toast};
 };

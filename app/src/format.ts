@@ -26,3 +26,7 @@ export const windowNote = (t: number, framesUsed?: number[], cuesUsed?: number):
   const video = n >= 1 ? `the last ${n} second${n === 1 ? '' : 's'} of video` : 'this moment';
   return cuesUsed && cuesUsed > 0 ? `Based on ${video} and recent dialogue (subtitles)` : `Based on ${video}`;
 };
+
+// Where "Replay last 10 seconds" seeks to: ten seconds before the paused moment, never before the start.
+export const REPLAY_SECONDS = 10;
+export const replayTarget = (t: number): number => (Number.isFinite(t) ? Math.max(0, t - REPLAY_SECONDS) : 0);
