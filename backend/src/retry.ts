@@ -31,6 +31,9 @@ export type RetryOptions = {attemptTimeoutsMs: number[]; backoffMs: number};
 // Total worst case: 4000 + 300 + 3000 = 7.3 s, under the app's request timeout.
 export const DEFAULT_RETRY: RetryOptions = {attemptTimeoutsMs: [4000, 3000], backoffMs: 300};
 
+// Prefetch makes a single attempt: it must never use up a viewer's retry budget.
+export const PREFETCH_RETRY: RetryOptions = {attemptTimeoutsMs: [5000], backoffMs: 0};
+
 export class UpstreamError extends Error {
   kind: 'timeout' | 'upstream' | 'budget';
   attempts: number;

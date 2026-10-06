@@ -7,6 +7,8 @@ import {AnswerCache} from './cache.ts';
 import {UpstreamError} from './retry.ts';
 import {makeClient} from './bedrock.ts';
 import {listClips} from './clips.ts';
+import {Prefetcher} from './prefetch.ts';
+import type {AskResponse} from './ask.ts';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -18,7 +20,9 @@ const deps = {
   defaultClip: process.env.DEFAULT_CLIP ?? 'tos',
   allowOverBudget: process.env.ALLOW_OVER_BUDGET === '1',
   cache: new AnswerCache(500, process.env.CACHE_FILE),
+  inflight: new Map<string, Promise<AskResponse>>(),
 };
+const prefetcher = new Prefetcher(deps);
 
 const send = (res: ServerResponse, status: number, body: unknown) => {
   res.writeHead(status, {'content-type': 'application/json'});
@@ -53,7 +57,23 @@ const server = createServer(async (req, res) => {
     return reply(200, {clips: await listClips(deps.clipsDir)});
   }
   if (req.method === 'GET' && req.url === '/health') {
-    return reply(200, {ok: true, mode: client.mode, cacheSize: deps.cache.size});
+    return reply(200, {ok: true, mode: client.mode, cacheSize: deps.cache.size, prefetch: prefetcher.stats});
+  }
+  if (req.method === 'POST' && (req.url === '/prefetch' || req.url === '/prefetch/cancel')) {
+    let body: {clipId?: unknown; timestamp?: unknown};
+    try {
+      body = (await readJson(req)) as typeof body;
+    } catch {
+      return reply(400, {error: 'invalid JSON'});
+    }
+    if (typeof body.clipId !== 'string' || typeof body.timestamp !== 'number' || !Number.isFinite(body.timestamp) || body.timestamp < 0) {
+      return reply(400, {error: 'expected {clipId: string, timestamp: number}'});
+    }
+    if (req.url === '/prefetch/cancel') {
+      return reply(200, {cancelled: prefetcher.cancel(body.clipId, body.timestamp)});
+    }
+    const result = await prefetcher.request(body.clipId, body.timestamp);
+    return reply(202, {prefetch: result}, {prefetch: result});
   }
   if (req.method === 'POST' && req.url === '/ask') {
     let body: unknown;
@@ -64,7 +84,7 @@ const server = createServer(async (req, res) => {
     }
     try {
       const result = await handleAsk(body, deps, {rid});
-      return reply(200, result, {cached: result.cached ?? false, attempts: result.attempts ?? 0, clip: (body as {clipId?: string}).clipId, t: result.t});
+      return reply(200, result, {source: result.source, waitedMs: result.latencyMs, cached: result.cached ?? false, attempts: result.attempts ?? 0, clip: (body as {clipId?: string}).clipId, t: result.t});
     } catch (e) {
       if (e instanceof AskInputError) {
         return reply(400, {error: e.code === 'clip' ? 'clip' : e.message, detail: e.message});

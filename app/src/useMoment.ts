@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {BackHandler} from 'react-native';
 import {useTVEventHandler} from '@amazon-devices/react-native-kepler';
-import {ask, AskError} from './api';
+import {ask, AskError, cancelPrefetch, prefetch} from './api';
 import {formatTime, replayTarget} from './format';
 
 export type MomentState =
@@ -31,13 +31,18 @@ export const useMoment = (clipId: string, {currentTime, pause, play, seek}: Cont
     const t = currentTime();
     pause();
     setState({phase: 'asking', t});
-  }, [pause, currentTime]);
+    prefetch(clipId, t); // pre-answer the four presets while the viewer picks one
+  }, [pause, currentTime, clipId]);
 
   const dismiss = useCallback(() => {
     requestId.current += 1; // drop any in-flight reply
+    const s = stateRef.current;
+    if (s.phase !== 'idle') {
+      cancelPrefetch(clipId, s.t); // drop prefetch calls that have not started
+    }
     setState({phase: 'idle'});
     play();
-  }, [play]);
+  }, [play, clipId]);
 
   // "Replay 10 s": seek back from the paused moment (stored t, not a fresh read), resume, and say so briefly.
   const replay = useCallback(async () => {
@@ -46,13 +51,14 @@ export const useMoment = (clipId: string, {currentTime, pause, play, seek}: Cont
       return;
     }
     requestId.current += 1;
+    cancelPrefetch(clipId, s.t);
     const target = replayTarget(s.t);
     await seek(target);
     play();
     setState({phase: 'idle'});
     setToast(`Replaying from ${formatTime(target)}`);
     setTimeout(() => setToast(null), 2500);
-  }, [seek, play]);
+  }, [seek, play, clipId]);
 
   const askAgain = useCallback(() => {
     const s = stateRef.current;
@@ -64,9 +70,11 @@ export const useMoment = (clipId: string, {currentTime, pause, play, seek}: Cont
 
   const choose = useCallback(async (question: string, t: number) => {
     const id = ++requestId.current;
+    const startedAt = Date.now();
     setState({phase: 'loading', t, question});
     try {
       const res = await ask(clipId, question, t);
+      console.log(`[moment] answer ms=${Date.now() - startedAt} source=${res.source ?? 'unknown'} clip=${clipId}`);
       if (id === requestId.current) {
         setState({phase: 'answer', t, question, answer: res.answer, framesUsed: res.framesUsed, cuesUsed: res.cuesUsed});
       }
