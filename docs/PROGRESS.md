@@ -84,3 +84,7 @@
 - 36 new questions drafted on branch `eval/action-holdout` (12 dev2 for tuning, 24 holdout2 locked); waiting for the owner to confirm them via `node backend/scripts/make-review-page.ts --split dev2,holdout2`.
 - Action-answer experiments done: negative result, default kept (eval/results/action-experiments.md). Backend gained per-question overrides (window, prompt variant, model, optional video input) with tests (51 backend tests); eval runner gained `--prod-timeouts`, multi-split and a noise-floor line in summaries. Independent held-out check of the default: 63% overall on 24 new questions.
 - Prefetch merged (see DECISIONS): cold p50 2.4 s / p95 3.5 s; prefetched and asked 3 s after opening the panel p50 6 ms / p95 0.8 s.
+
+## 2026-10-06 (Phase 6 done: features merged, docs updated, new video)
+- Merged: replay, clip picker, prefetch, action experiments (negative), docs. Demo video v2 (about 2:50, Kokoro af_heart voice, loudness-normalized) is at ~/Movies/moment-demo-v2-FINAL.mp4 with a captions-only version beside it; chapters in docs/YOUTUBE.md.
+- Still open (owner): spot-check of 15 answers (eval/grading/recheck.html); user tests or an explicit "not tested with outside viewers yet"; confirm the new video; Oct 17 Open Source decision; Oct 19 history scrub and go public; Oct 20-22 upload and submit.
