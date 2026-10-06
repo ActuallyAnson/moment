@@ -1,8 +1,9 @@
 import {createHash} from 'node:crypto';
-import {loadClip, readFrames} from './clips.ts';
+import {join} from 'node:path';
+import {cutVideo, loadClip, readFrames} from './clips.ts';
 import {parseAnswer} from './answer.ts';
-import {buildPrompt, PROMPT_VERSION, SYSTEM_PROMPT, SYSTEM_PROMPT_V3} from './prompt.ts';
-import type {PromptVersion} from './prompt.ts';
+import {ACTION_CHANGE_INSTRUCTION, ACTION_VIDEO_INSTRUCTION, buildPrompt, PROMPT_VERSION, SYSTEM_PROMPT, SYSTEM_PROMPT_V3} from './prompt.ts';
+import type {PromptVariant, PromptVersion} from './prompt.ts';
 import {selectCues, selectFrames, DEFAULT_WINDOW} from './window.ts';
 import type {WindowConfig} from './window.ts';
 import type {VisionClient} from './bedrock.ts';
@@ -19,6 +20,9 @@ export class AskInputError extends Error {
   }
 }
 
+// Per-preset changes to the default configuration (selected by the exact question text).
+export type PresetOverride = {lookbackSec?: number; maxFrames?: number; cueRadiusSec?: number; promptVariant?: PromptVariant; model?: string; videoSeconds?: number};
+
 export type AskDeps = {
   client: VisionClient;
   clipsDir: string;
@@ -31,6 +35,8 @@ export type AskDeps = {
   promptVersion?: PromptVersion;
   routeTextPreset?: boolean; // the 'What does the text say?' preset gets no dialogue at all
   noCache?: boolean; // the eval harness always bypasses the cache so latency numbers are real
+  presetOverrides?: Record<string, PresetOverride>;
+  clients?: Record<string, VisionClient>; // extra clients by model id, used when an override names a model
   inflight?: Map<string, Promise<AskResponse>>; // model calls in progress, keyed like the cache, so a viewer's /ask can join a prefetch
 };
 
@@ -54,8 +60,8 @@ export type AskResponse = {
 export const TEXT_PRESET = 'What does the text say?';
 export const DEFAULT_PROMPT_VERSION: PromptVersion = 'v3'; // chosen by the Phase 3 eval
 
-export const configHash = (cfg: WindowConfig, model: string, version: PromptVersion = 'v2', routed = false): string =>
-  createHash('sha256').update(JSON.stringify({cfg, model, version, routed, system: version === 'v3' ? SYSTEM_PROMPT_V3 : SYSTEM_PROMPT, v: PROMPT_VERSION})).digest('hex').slice(0, 12);
+export const configHash = (cfg: WindowConfig, model: string, version: PromptVersion = 'v2', routed = false, variant?: PromptVariant): string =>
+  createHash('sha256').update(JSON.stringify({cfg, model, version, routed, variant, instr: variant ? ACTION_CHANGE_INSTRUCTION + ACTION_VIDEO_INSTRUCTION : '', system: version === 'v3' ? SYSTEM_PROMPT_V3 : SYSTEM_PROMPT, v: PROMPT_VERSION})).digest('hex').slice(0, 12);
 
 // Accepts {clipId, timestamp, question}; also the Phase 1 shape {question, t}.
 export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string; origin?: 'ask' | 'prefetch'} = {}): Promise<AskResponse> => {
@@ -77,7 +83,11 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
     throw new AskInputError(`unknown clip: ${clipId}`, 'clip');
   }
 
-  const cfg = deps.window ?? DEFAULT_WINDOW;
+  const ov = deps.presetOverrides?.[question.trim()];
+  const baseCfg = deps.window ?? DEFAULT_WINDOW;
+  const cfg: WindowConfig = {...baseCfg, ...(ov?.lookbackSec !== undefined ? {lookbackSec: ov.lookbackSec} : {}), ...(ov?.maxFrames !== undefined ? {maxFrames: ov.maxFrames} : {}), ...(ov?.cueRadiusSec !== undefined ? {cueRadiusSec: ov.cueRadiusSec} : {})};
+  const client: VisionClient = (ov?.model && deps.clients?.[ov.model]) || deps.client;
+  const variant = ov?.promptVariant;
   const frames = selectFrames(clip.index.frames, t, cfg);
   const routedAway = (deps.routeTextPreset ?? true) && question.trim() === TEXT_PRESET;
   const cues = routedAway ? [] : selectCues(clip.cues, t, cfg.cueRadiusSec, cfg.cueAheadSec ?? cfg.cueRadiusSec);
@@ -88,7 +98,7 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
     framePaths: frames.map((f) => f.path),
     cueTexts: cues.map((c) => c.text),
     question,
-    configHash: configHash(cfg, deps.client.mode === 'live' ? 'live' : 'stub', version, deps.routeTextPreset ?? true),
+    configHash: configHash(cfg, ov?.model ?? (client.mode === 'live' ? 'live' : 'stub'), version, deps.routeTextPreset ?? true, variant),
   });
   if (deps.cache && !deps.noCache) {
     const hit = deps.cache.get(key);
@@ -111,30 +121,32 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
   }
 
   const compute = async (): Promise<AskResponse> => {
-    const prompt = buildPrompt({question, t, frames, cues}, version);
-    const images = await readFrames(clip, frames);
+    const prompt = buildPrompt({question, t, frames, cues}, version, variant);
+    const videoSeconds = variant === 'action-video' ? (ov?.videoSeconds ?? 4) : 0;
+    const images = videoSeconds ? [] : await readFrames(clip, frames);
+    const video = videoSeconds ? await cutVideo(join(clip.dir, 'clip.mp4'), Math.max(0, t - videoSeconds), Math.min(videoSeconds, t) || 0.5) : undefined;
 
-    const before = deps.client.mode === 'live' ? await totalSpent(deps.costLogPath) : 0;
+    const before = client.mode === 'live' ? await totalSpent(deps.costLogPath) : 0;
     if (before >= HARD_STOP_USD && !deps.allowOverBudget) {
       throw new UpstreamError(`budget guard: $${before.toFixed(2)} spent, live calls disabled`, 'budget', 0, false);
     }
 
     const started = performance.now();
     const {value: res, attempts} = await callWithRetry(
-      (signal) => deps.client.answer({system: prompt.system, user: prompt.user, images}, {signal}),
+      (signal) => client.answer({system: prompt.system, user: prompt.user, images, video}, {signal}),
       (origin === 'prefetch' ? PREFETCH_RETRY : (deps.retry ?? DEFAULT_RETRY)),
     );
     const latencyMs = Math.round(performance.now() - started);
 
     let costUsd = 0;
-    if (deps.client.mode === 'live') {
-      const cost = estimateCost(res.model, deps.client.region, res.inputTokens, res.outputTokens);
+    if (client.mode === 'live') {
+      const cost = estimateCost(res.model, client.region, res.inputTokens, res.outputTokens);
       costUsd = cost ?? 0;
       await logCost(deps.costLogPath, {
         date: new Date().toISOString(),
         model: res.model,
-        region: deps.client.region,
-        images: images.length,
+        region: client.region,
+        images: images.length + (video ? 1 : 0),
         inputTokens: res.inputTokens,
         outputTokens: res.outputTokens,
         estCostUsd: costUsd,
@@ -152,7 +164,7 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
       modelLatencyMs: latencyMs,
       source: 'live',
       origin,
-      framesUsed: frames.map((f) => f.t),
+      framesUsed: videoSeconds ? [Math.max(0, t - videoSeconds), t] : frames.map((f) => f.t),
       cuesUsed: cues.length,
       model: res.model,
       t,

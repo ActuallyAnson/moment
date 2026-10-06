@@ -2,6 +2,13 @@ import type {Cue} from './srt.ts';
 import type {Frame} from './window.ts';
 
 export type PromptVersion = 'v2' | 'v3';
+export type PromptVariant = 'action-change' | 'action-video';
+
+export const ACTION_VIDEO_INSTRUCTION =
+  'For this question you get a short video clip that ends at the pause. Say what happens in it: who moves, where, and what they do. Describe the motion, not just the scene.';
+
+export const ACTION_CHANGE_INSTRUCTION =
+  'For this question, say what changed between the first and the last image: who moved, where, and what they did. Describe the motion, not just the scene.';
 export const PROMPT_VERSION = 'v2';
 
 export const SYSTEM_PROMPT = [
@@ -34,10 +41,14 @@ const offsetLabel = (c: Cue, t: number): string => {
   return c.end < t ? `${Math.round(t - c.end)} s before the pause` : `${Math.round(c.start - t)} s after the pause`;
 };
 
-const buildPromptV3 = (args: {question: string; t: number; frames: Frame[]; cues: Cue[]}): {system: string; user: string} => {
+const buildPromptV3 = (args: {question: string; t: number; frames: Frame[]; cues: Cue[]}, variant?: PromptVariant): {system: string; user: string} => {
   const {question, t, frames, cues} = args;
   const lines: string[] = [`The video is paused at ${t.toFixed(1)} s (${mmss(t)}).`];
-  lines.push(frames.length ? `Images, oldest to newest: ${frames.map((f, i) => `image ${i + 1} at ${f.t.toFixed(1)} s`).join(', ')}.` : 'No images are available.');
+  const label = (f: Frame, i: number) => (variant === 'action-change' || variant === 'action-video' ? `image ${i + 1} (${Math.max(0, t - f.t).toFixed(1)} s before the pause)` : `image ${i + 1} at ${f.t.toFixed(1)} s`);
+  if (variant === 'action-video') {
+    lines.push('A short video clip of the last moments before the pause is attached (it ends at the pause). Watch how things move in it.');
+  }
+  if (variant !== 'action-video') lines.push(frames.length ? `Images, oldest to newest: ${frames.map(label).join(', ')}.` : 'No images are available.');
   if (cues.length) {
     lines.push('Spoken dialogue (audio transcript, NOT visible on screen; speakers are not labeled):');
     for (const c of cues) {
@@ -47,15 +58,16 @@ const buildPromptV3 = (args: {question: string; t: number; frames: Frame[]; cues
     lines.push('No dialogue transcript is provided.');
   }
   lines.push(`Question: ${question}`);
-  return {system: SYSTEM_PROMPT_V3, user: lines.join('\n')};
+  return {system: variant ? `${SYSTEM_PROMPT_V3} ${variant === 'action-video' ? ACTION_VIDEO_INSTRUCTION : ACTION_CHANGE_INSTRUCTION}` : SYSTEM_PROMPT_V3, user: lines.join('\n')};
 };
 
 export const buildPrompt = (
   args: {question: string; t: number; frames: Frame[]; cues: Cue[]},
   version: PromptVersion = 'v2',
+  variant?: PromptVariant,
 ): {system: string; user: string} => {
   if (version === 'v3') {
-    return buildPromptV3(args);
+    return buildPromptV3(args, variant);
   }
   const {question, t, frames, cues} = args;
   const lines: string[] = [];

@@ -1,0 +1,20 @@
+# Action-question experiments (Oct 6): did anything beat the default for "What just happened?"
+
+**Setup.** The first test split (35 questions) had already been used, so 36 new questions were written at new moments of the six clips (`eval/questions.jsonl`, splits `dev2` = 12 for tuning and `holdout2` = 24 locked; all confirmed by the owner). Candidates were tuned and compared on the development questions only (the 15 older `dev` + the 12 `dev2`; 11 of those 27 are action questions). All runs used the production attempt timeouts (4 s, then 3 s) so a candidate that is only good when slow cannot win. Grading of the action answers was done blind (answers shuffled, configuration hidden) by an automated assistant against the owner-confirmed expected answers; the owner spot-check is still pending. Accuracy = (correct + 0.5 x partial) / items.
+
+| Candidate (for "What just happened?" only) | Idea | Action accuracy on 11 dev items | Problems |
+|---|---|---|---|
+| **c7-v3 (control, current default)** | 5 frames over the last 4 s, prompt v3 | **55%** (2 correct, 8 partial, 1 wrong) | none; p95 2.7 s, 0 errors |
+| c9-act-change | add "say what changed between the first and last image", label images "N s before the pause" | 45% (3 / 4 / 4) | 1 timeout, 3 slow answers (p95 3.7 s) |
+| c10-act-w8f8 | 8 frames over 8 s plus the c9 prompt | 36% (1 / 6 / 1, plus 3 timeouts) | 4 of 27 requests timed out at 4 s + 3 s: does not fit the latency budget |
+| c12-act-video | send the last 4 s as a video clip to Nova Lite instead of frames | 36% (2 / 4 / 4 wrong / 1 hallucinated), vs control 55% in the same round | invented actions ("threw the lute", "playing a guitar"); latency fine (p50 2.3 s), cheaper in tokens |
+
+Nova Pro for the action question (config `c11-act-pro`) was not run: its p95 (5.0 s on the earlier test split) does not fit the 4 s + 3 s budget, and none of the Lite candidates showed a headroom worth paying 13x for.
+
+**Decision: keep c7-v3.** The adoption rule (decided before the runs) required a clear paired gain on the held-out action items, no new hallucinations, no extra timeouts, and a gain larger than the noise floor. No candidate cleared even the first bar on the development questions, so none was run on the locked held-out set (it stays unused for future ideas). With 11 items and about 2 of 15 to 2 of 24 answers changing between identical runs, differences of 1 to 2 items are noise; the conclusion is "no evidence of improvement", not "proven worse", except that c10 fails on timeouts and c12 added a hallucination.
+
+**Independent check of the default.** The control (c7-v3, unchanged) was run once (two repeats) on the locked `holdout2` split (24 questions across all categories, never used for tuning): overall accuracy 63%, action 54% (12 questions), identity 50% (3), on-screen text 100% (3), counting 67% (3), "not visible" 67% (3; one "What is the weapon called?" answered with a subtitle line instead of abstaining), hallucinated 4% (one invented "playing a flute"), p50 2.4 s, p95 3.5 s, 0 errors, 2 of 24 answers differing between the two identical runs. See `summary-holdout2.md`. This is lower than the 73% on the first test split (35 questions); both are small samples, and the new split has proportionally more action questions (half), the weakest category.
+
+**A flaw in one of my own expected answers.** `d2-a1` (Tears of Steel at 5.5 s) expects "a factory skyline cuts to the two people on the bridge", but the opening shot also shows a rocket launching from the factory, which all models mentioned. The answers were graded "partial" (they missed the cut), but the expected answer was incomplete.
+
+Raw answers and per-run metadata: the folders next to this file (`c7-v3__dev+dev2__*`, `c9-*`, `c10-*`, `c12-*`, `c7-v3__holdout2__*`); blind grades: `action-dev-blind-grades.json`. Reproduce: `node backend/scripts/run.ts <config> --split dev,dev2 --prod-timeouts`.

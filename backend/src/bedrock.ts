@@ -1,4 +1,4 @@
-export type VisionRequest = {system: string; user: string; images: Uint8Array[]};
+export type VisionRequest = {system: string; user: string; images: Uint8Array[]; video?: Uint8Array};
 export type VisionResult = {text: string; inputTokens: number; outputTokens: number; model: string};
 
 export interface VisionClient {
@@ -27,7 +27,7 @@ export class StubClient implements VisionClient {
     });
     return {
       text: `Stub answer: no model was called (${req.images.length} frames selected).`,
-      inputTokens: req.images.length * TOKENS_PER_IMAGE + Math.ceil((req.system.length + req.user.length) / 4),
+      inputTokens: (req.images.length + (req.video ? 4 : 0)) * TOKENS_PER_IMAGE + Math.ceil((req.system.length + req.user.length) / 4),
       outputTokens: 20,
       model: 'stub',
     };
@@ -68,6 +68,7 @@ export class LiveClient implements VisionClient {
             role: 'user',
             content: [
               ...req.images.map((bytes) => ({image: {format: 'jpeg' as const, source: {bytes}}})),
+              ...(req.video ? [{video: {format: 'mp4' as const, source: {bytes: req.video}}}] : []),
               {text: req.user},
             ],
           },
