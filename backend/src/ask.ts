@@ -11,7 +11,13 @@ import {callWithRetry, DEFAULT_RETRY, UpstreamError} from './retry.ts';
 import type {RetryOptions} from './retry.ts';
 import {AnswerCache, cacheKey} from './cache.ts';
 
-export class AskInputError extends Error {}
+export class AskInputError extends Error {
+  code: 'input' | 'clip';
+  constructor(message: string, code: 'input' | 'clip' = 'input') {
+    super(message);
+    this.code = code;
+  }
+}
 
 export type AskDeps = {
   client: VisionClient;
@@ -63,7 +69,7 @@ export const handleAsk = async (body: unknown, deps: AskDeps, ctx: {rid?: string
   try {
     clip = await loadClip(deps.clipsDir, clipId);
   } catch {
-    throw new AskInputError(`unknown clip: ${clipId}`);
+    throw new AskInputError(`unknown clip: ${clipId}`, 'clip');
   }
 
   const cfg = deps.window ?? DEFAULT_WINDOW;
