@@ -8,6 +8,7 @@ import {QuestionOverlay} from './components/QuestionOverlay';
 import {AnswerCard} from './components/AnswerCard';
 import {IdleHint} from './components/IdleHint';
 import {PausedBadge} from './components/PausedBadge';
+import {ReplayToast} from './components/ReplayToast';
 import LinearGradient from '@amazon-devices/react-linear-gradient';
 import {gradients} from './theme';
 
@@ -34,7 +35,7 @@ const useIdleHint = (idle: boolean): boolean => {
 
 export const App = () => {
   const player = usePlayer();
-  const {state, choose, dismiss, askAgain} = useMoment(player);
+  const {state, choose, dismiss, askAgain, replay, toast} = useMoment(player);
   const [large, setLarge] = useState(false); // text size toggle, in memory only
   const hint = useIdleHint(state.phase === 'idle');
 
@@ -54,11 +55,12 @@ export const App = () => {
           <LinearGradient colors={gradients.scrimBottom} start={{x: 0, y: 0.35}} end={{x: 0, y: 1}} style={styles.dim} pointerEvents="none" />
         )}
         {state.phase !== 'idle' && <PausedBadge />}
+        {toast && <ReplayToast text={toast} />}
         {state.phase === 'asking' && (
           <QuestionOverlay t={state.t} onChoose={(q) => choose(q, state.t)} large={large} onToggleLarge={() => setLarge((v) => !v)} />
         )}
         {(state.phase === 'loading' || state.phase === 'answer' || state.phase === 'error') && (
-          <AnswerCard state={state} onRetry={() => choose(state.question, state.t)} onDismiss={dismiss} onAskAgain={askAgain} />
+          <AnswerCard state={state} onRetry={() => choose(state.question, state.t)} onDismiss={dismiss} onAskAgain={askAgain} onReplay={replay} />
         )}
       </View>
     </TextScaleContext.Provider>
