@@ -8,6 +8,8 @@
 |---|---|
 | ![Question panel](docs/img/overlay.png) | ![Answer card](docs/img/answer.png) |
 
+From the answer you can **ask another** question about the same moment, **replay the last 10 seconds**, or resume. A start screen lets you **pick a clip**. When you open the question panel, the four preset questions are **pre-answered in the background**, so a question asked a few seconds later appears almost instantly.
+
 Moment is **AI-enhanced viewing**: useful when you looked away, are multitasking, or can't read small on-screen text. It has screen-reader labels, but it has **not** been tested with blind or low-vision viewers, and we make no claim that it is built for them.
 
 Built for the Amazon Developer Hackathon (Fire TV track, AWS Builder mini challenge). Inference runs in the cloud (Amazon Bedrock), not on the TV.
@@ -20,7 +22,8 @@ Fire TV app (Vega OS, React Native 0.83) on the Vega Virtual Device
         |  http://10.0.2.2:8787   (the emulator's address for the host Mac)
 Node backend (127.0.0.1:8787, TypeScript, Node 24)
   window: 5 frames from the last 4 s  +  dialogue from the last 10 s (never future dialogue)
-  prompt v3 -> answer cache -> retry (4 s + 3 s attempts) -> cost guard ($130 hard stop)
+  prompt v3 -> answer cache + in-flight join -> retry (4 s + 3 s attempts) -> cost guard ($130 hard stop)
+  prefetch: opening the panel pre-answers the 4 presets (queue, concurrency 4, cancelled on close)
         |  Converse API (AWS SDK for JavaScript v3)
 Amazon Bedrock, us-east-1, amazon.nova-lite-v1:0 (image + text in, text out)
 
@@ -35,13 +38,11 @@ Tested on macOS 27, Node 24.4.1 and Vega SDK 0.24.12112. Stub mode needs no AWS 
 
 1. **Tools.** `softwareupdate --install-rosetta --agree-to-license`, then `brew install node ffmpeg watchman`. Keep the project **outside** Documents/Desktop/Downloads, or allow the macOS prompt for watchman, otherwise the app build can hang silently (friction log #6).
 2. **Vega SDK and emulator.** Install the SDK from https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html (close VS Code first; run the installer in a normal terminal window), then `source ~/vega/env` and `vega virtual-device start --timeout 600`.
-3. **Clips.** From the repo root: `node backend/scripts/fetch-clips.ts` (downloads and cuts the six excerpts; needs network), then `node backend/scripts/prepare-app-clip.ts tos` (bundles one clip into the app).
+3. **Clips.** From the repo root: `node backend/scripts/fetch-clips.ts` (downloads and cuts the six excerpts; needs network), then `node backend/scripts/prepare-app-clips.ts` (bundles all six into the app, about 40 MB, and creates the picker's poster frames).
 4. **Backend, stub mode (no AWS).** `cd backend && npm install && npm start`; check `curl 127.0.0.1:8787/health`. Answers in stub mode are placeholders.
 5. **Backend, live mode.** Configure an AWS profile with `bedrock:InvokeModel` only (never commit credentials), then `AWS_PROFILE=<profile> AWS_REGION=us-east-1 BEDROCK_MODE=live npm start`. A brand-new AWS account can be blocked from Bedrock for up to 2 hours (friction log #12). Every live call is logged to `eval/cost_log.csv` and refused above $130.
 6. **App.** `cd app && npm install && npm run build:app && vega run-app build/aarch64-release/moment-app_aarch64.vpkg com.anson.moment.main -d VirtualDevice`.
-7. **Use it.** In the emulator window the keyboard is the remote: **F2 = Menu** (or Enter = Select) opens the panel, arrows move, **Enter** picks, **Esc = Back** resumes, **F4 = Play/Pause**. In macOS System Settings > Keyboard, turn on "Use F1, F2, etc. keys as standard function keys".
-
-To play a different bundled clip: `node backend/scripts/prepare-app-clip.ts sintel` and rebuild the app (clip ids: tos, sintel, bbb, spring, llama, marketst).
+7. **Use it.** In the emulator window the keyboard is the remote. On the start screen, arrows move and **Enter** starts a clip. While a clip plays: **F2 = Menu** (or Enter = Select) opens the question panel, arrows move, **Enter** picks; on the answer card, Enter presses the focused button (Ask another, Replay 10 s, Resume), **Esc = Back** resumes (Back while playing returns to the clip picker), **F4 = Play/Pause**. In macOS System Settings > Keyboard, turn on "Use F1, F2, etc. keys as standard function keys".
 
 ## Evaluation
 
@@ -62,17 +63,23 @@ Paired by question, the default beat c4 on 5 questions and lost none (30 ties). 
 - **Grading:** all answers were graded by an automated assistant against expected answers that the project owner confirmed by watching the clips. A 15-answer spot-check by the owner to measure agreement is **pending**; this README will state the agreement rate once it exists.
 - One Nova Pro request of 35 was throttled by Bedrock and is left ungraded.
 
-Total live spend for everything above: **348 live calls, $0.2613** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
+**Second, independent check (held-out, never used for tuning).** After the default was chosen, 36 new questions were written at new moments (12 for tuning, 24 locked). The unchanged default scored **63% overall on the 24 locked questions** (action 54% on 12, identity 50% on 3, on-screen text 100% on 3, counting 67% on 3, "not visible" 67% on 3), 4% hallucinated, p50 2.4 s / p95 3.5 s with the production timeouts, 2 of 24 answers differing between two identical runs (`eval/results/summary-holdout2.md`). That is lower than the 73% on the first test split; both samples are small, and the new one is half action questions, the weakest category.
+
+**An attempt to improve action answers did not work.** Three ideas for "What just happened?" (a "what changed" prompt, 8 frames over 8 s, and sending the last 4 s as a video clip) were tried on the development questions with production timeouts; none beat the default (55% vs 45% / 36% / 36% on 11 items), and two added timeouts or invented actions, so the default was kept (`eval/results/action-experiments.md`).
+
+**Latency with and without prefetch** (live backend, 20 distinct moments each, `node backend/scripts/measure-prefetch.ts`, results in `eval/results/prefetch-conc*.json`): a cold answer takes p50 2.4 s / p95 3.5 s. If the viewer picks a question 3 s after the panel opens, the answer is already there (prefetch concurrency 4): p50 6 ms / p95 0.8 s, 19 of 20 served from prefetch; at concurrency 2 it was p50 1.2 s. Asking immediately joins the call in flight (no second model call). Prefetch costs about $0.0012 per panel open (4 calls). No throttling in 106 prefetch calls including a burst of rapid opens.
+
+Total live spend for everything above: **873 live calls, $0.4086** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
 
 Reproduce: `AWS_PROFILE=<profile> AWS_REGION=us-east-1 node backend/scripts/run.ts c7-v3 --split test`, then `node backend/scripts/grade-page.ts <runDir>` (a blind grading page), `node backend/scripts/grade-import.ts <grades.csv>` and `node backend/scripts/summarize.ts <runDirs>`. Raw answers and the grades we used are committed under `eval/`.
 
 ## Tests
 
-`cd backend && npm test` (42 tests: window selection, subtitles, prompt, retry and timeouts, cache, cost guard, eval statistics) and `cd app && npm test` (11 tests: contrast ratios, spoken time, answer note).
+`cd backend && npm test` (51 tests: window selection, subtitles, prompt, retry and timeouts, cache, prefetch and in-flight joining, per-question overrides, cost guard, eval statistics) and `cd app && npm test` (13 tests: contrast ratios, spoken time, answer note, replay target, bundled clips).
 
 ## Limitations
 
-- Action questions ("What just happened?") are the weakest category (63% on the test split, 4 questions); answers are often correct but incomplete.
+- Action questions ("What just happened?") are the weakest category (63% on the first test split, 4 questions; 54% on the second held-out check, 12 questions); answers are often right about the scene but miss or invent what changed. Three attempted fixes did not help.
 - The "What does the text say?" question can return text that was on screen a few seconds earlier, and counting can include people from earlier frames in the window.
 - Pre-cut CC-BY clips only: frames are extracted offline and the backend runs on the development Mac, not a live stream or a real TV.
 - Screen-reader labels exist; actual VoiceView speech on the emulator is not verified (friction log #18). User tests with outside viewers have a script (`docs/USER_TESTS.md`); results are added there only if the sessions are run.

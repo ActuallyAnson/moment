@@ -868,3 +868,7 @@ date,model,region,images,input_tokens,output_tokens,est_cost_usd,note
 2026-10-06T06:24:06.914Z,amazon.nova-lite-v1:0,us-east-1,5,3989,10,0.000242,eval-c7-v3 sintel@5.0 attempts=1
 2026-10-06T06:24:09.193Z,amazon.nova-lite-v1:0,us-east-1,5,3979,7,0.000240,eval-c7-v3 bbb@33.0 attempts=1
 2026-10-06T06:24:11.978Z,amazon.nova-lite-v1:0,us-east-1,5,8701,9,0.000524,eval-c7-v3 marketst@28.0 attempts=1
+2026-10-06T06:25:37.648Z,amazon.nova-lite-v1:0,us-east-1,5,3798,9,0.000230,prefetch tos@8.6 attempts=1 prefetch
+2026-10-06T06:25:37.703Z,amazon.nova-lite-v1:0,us-east-1,5,3866,17,0.000236,prefetch tos@8.6 attempts=1 prefetch
+2026-10-06T06:25:37.812Z,amazon.nova-lite-v1:0,us-east-1,5,3865,34,0.000240,prefetch tos@8.6 attempts=1 prefetch
+2026-10-06T06:25:38.098Z,amazon.nova-lite-v1:0,us-east-1,5,3867,87,0.000253,prefetch tos@8.6 attempts=1 prefetch
