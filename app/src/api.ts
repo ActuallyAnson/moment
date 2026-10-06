@@ -1,6 +1,6 @@
 import {API_BASE, REQUEST_TIMEOUT_MS} from './config';
 
-export type AskResult = {answer: string; t: number; latencyMs?: number; framesUsed?: number[]; cuesUsed?: number; model?: string};
+export type AskResult = {answer: string; t: number; latencyMs?: number; framesUsed?: number[]; cuesUsed?: number; model?: string; source?: 'live' | 'cache' | 'prefetch' | 'joined'};
 
 
 export class AskError extends Error {}
@@ -60,4 +60,21 @@ export const ask = async (clipId: string, question: string, t: number): Promise<
     }
     throw new AskError("Couldn't reach the answer service.");
   }
+};
+
+// Fire-and-forget: ask the backend to pre-answer the four presets for this moment (cheap, and cancelled if the panel closes).
+export const prefetch = (clipId: string, t: number): void => {
+  fetch(`${API_BASE}/prefetch`, {
+    method: 'POST',
+    headers: {'content-type': 'application/json'},
+    body: JSON.stringify({clipId, timestamp: t}),
+  }).catch(() => undefined);
+};
+
+export const cancelPrefetch = (clipId: string, t: number): void => {
+  fetch(`${API_BASE}/prefetch/cancel`, {
+    method: 'POST',
+    headers: {'content-type': 'application/json'},
+    body: JSON.stringify({clipId, timestamp: t}),
+  }).catch(() => undefined);
 };

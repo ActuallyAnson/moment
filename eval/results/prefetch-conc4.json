@@ -1,0 +1,51 @@
+{
+  "label": "conc4",
+  "N": 20,
+  "date": "2026-10-06T05:12:55.440Z",
+  "base": "http://127.0.0.1:8787",
+  "concurrency": "4",
+  "cold": {
+    "n": 0,
+    "errors": 0,
+    "p50": 0,
+    "p95": 0,
+    "mean": 0,
+    "sources": {}
+  },
+  "prefetched": {
+    "n": 20,
+    "errors": 0,
+    "p50": 6,
+    "p95": 769,
+    "mean": 44,
+    "sources": {
+      "prefetch": 19,
+      "joined": 1
+    }
+  },
+  "joined": {
+    "n": 0,
+    "errors": 0,
+    "p50": 0,
+    "p95": 0,
+    "mean": 0,
+    "sources": {}
+  },
+  "burst": {
+    "opens": 10,
+    "prefetchStatsBefore": {
+      "started": 80,
+      "finished": 80,
+      "failed": 0,
+      "throttled": 0,
+      "cancelled": 0
+    },
+    "prefetchStatsAfter": {
+      "started": 106,
+      "finished": 102,
+      "failed": 0,
+      "throttled": 0,
+      "cancelled": 0
+    }
+  }
+}
