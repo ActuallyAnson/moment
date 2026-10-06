@@ -165,3 +165,12 @@ The entries most useful to the platform teams are 5, 6, 7, 9, 10, 12, 16 and 18.
 - **Severity:** medium for accessibility testing.
 - **Workaround:** the Back + Menu hold, and reading the Text Banner.
 - **Suggestion:** allow `vdcm set` for accessibility settings on the VVD, make the Text Banner dialog respond to injected keys, and document the Text Banner as a way to verify spoken output.
+
+## 19. The app's `console.log` output could not be found on the VVD (release build)
+- **Task:** read the app's own timing logs (`[moment] answer ms=... source=...`) to report end-to-end latency from the app.
+- **Steps:** built a release app, ran it on the VVD, then searched the device with `vega exec vda -s emulator-5554 shell "journalctl --no-pager | grep moment"` (the journal had about 30 lines in total), `vega exec vda -s emulator-5554 logcat -d` (one empty line), and `ls /var/log` (empty). Debug builds, Metro's console and `vega` logging commands were not tried.
+- **Expected:** a documented way to read `console.log` from a running app.
+- **Actual:** none of the places above showed the app's output.
+- **Severity:** low to medium (blocks measuring on-device timings from app code).
+- **Workaround:** measure from the backend (request log with `source` and `waitedMs`) and from a client that makes the same HTTP calls (`backend/scripts/measure-prefetch.ts`); use the panel's on-screen "Paused at" label to read the playback position (`tools/dev/replay_check.py`).
+- **Suggestion:** document where release-build JS logs go on the VVD, or add a `vega logs` command.
