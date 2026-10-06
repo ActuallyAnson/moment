@@ -71,7 +71,7 @@ Paired by question, the default beat c4 on 5 questions and lost none (30 ties). 
 
 **Dialogue question.** "What did they just say?" is answered from the subtitles with no model call. On 22 new owner-confirmed questions it was exact (11 of 11 on the development split, 11 of 11 on the locked split, each including 3 honest "no subtitles / no dialogue" cases), and a Nova Lite alternative that also looked at 2 frames was worse (88% vs 100%, dropped the newest line once), so it was not used. Because the answer copies the subtitle text this mainly checks the window rule and the honest no-subtitles answers, not model skill; details and caveats in `eval/results/dialogue-experiments.md`. Not tested with real audio or with deaf or hard-of-hearing viewers.
 
-Total live spend for everything above: **1144 live calls, $0.4799** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
+Total live spend for everything above: **1173 live calls, $0.4864** (`node backend/scripts/spend.ts`, from `eval/cost_log.csv`).
 
 Reproduce: `AWS_PROFILE=<profile> AWS_REGION=us-east-1 node backend/scripts/run.ts c7-v3 --split test`, then `node backend/scripts/grade-page.ts <runDir>` (a blind grading page), `node backend/scripts/grade-import.ts <grades.csv>` and `node backend/scripts/summarize.ts <runDirs>`. Raw answers and the grades we used are committed under `eval/`.
 

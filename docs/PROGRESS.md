@@ -88,3 +88,9 @@
 ## 2026-10-06 (Phase 6 done: features merged, docs updated, new video)
 - Merged: replay, clip picker, prefetch, action experiments (negative), docs. Demo video v2 (about 2:50, Kokoro af_heart voice, loudness-normalized) is at ~/Movies/moment-demo-v2-FINAL.mp4 with a captions-only version beside it; chapters in docs/YOUTUBE.md.
 - Still open (owner): spot-check of 15 answers (eval/grading/recheck.html); user tests or an explicit "not tested with outside viewers yet"; confirm the new video; Oct 17 Open Source decision; Oct 19 history scrub and go public; Oct 20-22 upload and submit.
+
+## 2026-10-06 (dialogue question done)
+- "What did they just say?" merged: answered from the subtitles (verbatim, no model call), honest answers when a clip has no subtitles or no cue in the last 10 s. 22 new owner-confirmed questions: dev3 A 100% vs model variant B 88% (rejected under a rule fixed before the run); locked holdout3: A 11/11 (mostly a plumbing check, see eval/results/dialogue-experiments.md). The original four presets are proven unchanged by an invariance test (59 backend tests, 15 app tests).
+- Prefetch re-measured with five presets: median 2 ms but 95th percentile 4.2 s (16/20 from prefetch, 1 of 250 prefetch calls failed, not a throttle); failures are now logged. Docs report both runs.
+- Video v3 (2:52) at ~/Movies/moment-demo-v3-FINAL.mp4; chapters in docs/YOUTUBE.md. Audio understanding (Transcribe or Whisper, sound cues) stays under "what's next".
+- Still open (owner): spot-check of 15 answers (eval/grading/recheck.html); user tests or an explicit "not tested with outside viewers yet"; watch video v3; Oct 17 Open Source decision; Oct 19 history scrub and go public; Oct 20-22 upload and submit.
