@@ -155,3 +155,36 @@ test('the app and the backend list the same preset questions (order may differ)'
   const appQuestions = [...block.matchAll(/'([^']+\?)'/g)].map((m) => m[1]);
   assert.deepEqual([...appQuestions].sort(), [...PRESET_QUESTIONS].sort());
 });
+
+test('a failed prefetch call is retried once; a second failure counts as failed; throttles and bad input are not retried', async () => {
+  let n = 0;
+  const flaky: VisionClient & {calls: number} = {calls: 0, mode: 'stub', region: 'none', answer: async () => {
+    flaky.calls++;
+    n++;
+    if (n === 1) {
+      throw Object.assign(new Error('boom'), {name: 'InternalServerException'}); // retryable: upstream 5xx
+    }
+    return {text: 'Fine.', inputTokens: 1, outputTokens: 1, model: 'stub'};
+  }};
+  const deps = await mk(flaky);
+  const pf = new Prefetcher(deps, {concurrency: 1});
+  await pf.request('demo', 8);
+  await wait(250);
+  assert.equal(pf.stats.retried, 1);
+  assert.equal(pf.stats.failed, 0);
+  assert.equal(deps.cache.size, 4); // the retried call succeeded: all four model answers are cached
+
+  const bad = slow(5, () => Object.assign(new Error('nope'), {name: 'ValidationException'}));
+  const pf2 = new Prefetcher(await mk(bad), {concurrency: 1});
+  await pf2.request('demo', 8);
+  await wait(150);
+  assert.equal(pf2.stats.retried, 0); // bad input is never retried
+  assert.ok(pf2.stats.failed >= 1);
+
+  const alwaysFail = slow(5, () => Object.assign(new Error('boom'), {name: 'InternalServerException'}));
+  const pf3 = new Prefetcher(await mk(alwaysFail), {concurrency: 1});
+  await pf3.request('demo', 9);
+  await wait(250);
+  assert.ok(pf3.stats.retried >= 1 && pf3.stats.failed >= 1); // retried once, then given up
+  assert.ok(pf3.stats.retried <= pf3.stats.started);
+});

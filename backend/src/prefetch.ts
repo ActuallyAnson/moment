@@ -1,7 +1,7 @@
 import {handleAsk} from './ask.ts';
 import type {AskDeps} from './ask.ts';
 import {totalSpent} from './cost.ts';
-import {classify} from './retry.ts';
+import {classify, UpstreamError} from './retry.ts';
 
 // The preset questions, in the order they are pre-answered (the focused one first). The dialogue question is answered
 // from the subtitles (no model call in the default mode), so it adds no cost; it is queued last.
@@ -25,7 +25,7 @@ export const DEFAULT_PREFETCH: PrefetchOptions = {
   throttleBackoffMs: 60_000,
 };
 
-type Job = {clipId: string; t: number; question: string; cancelled: boolean};
+type Job = {clipId: string; t: number; question: string; cancelled: boolean; attempt?: number};
 
 export type PrefetchResult = 'accepted' | 'disabled' | 'duplicate' | 'rate-limited' | 'budget' | 'cooling-down';
 
@@ -37,7 +37,7 @@ export class Prefetcher {
   private recent = new Map<string, number>();
   private stamps: number[] = [];
   private disabledUntil = 0;
-  stats = {started: 0, finished: 0, failed: 0, throttled: 0, cancelled: 0};
+  stats = {started: 0, finished: 0, failed: 0, retried: 0, throttled: 0, cancelled: 0};
 
   constructor(deps: AskDeps, opts: Partial<PrefetchOptions> = {}) {
     this.deps = deps;
@@ -100,6 +100,13 @@ export class Prefetcher {
           this.stats.finished++;
         })
         .catch((e: unknown) => {
+          // A slow or failed background call is retried once (not for throttles, budget or bad input).
+          const retryable = e instanceof UpstreamError && e.retryable && e.kind !== 'budget' && !/throttl/i.test(String(e.message));
+          if (retryable && !job.attempt && !job.cancelled && Date.now() >= this.disabledUntil) {
+            this.stats.retried++;
+            this.queue.unshift({...job, attempt: 1});
+            return;
+          }
           this.stats.failed++;
           console.warn(JSON.stringify({ts: new Date().toISOString(), prefetchFailed: true, clip: job.clipId, t: job.t, q: job.question, error: String((e as Error)?.message ?? e)}));
           const kind = classify((e as {cause?: unknown}).cause ?? e);
