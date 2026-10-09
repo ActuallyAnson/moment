@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {handleAsk} from '../src/ask.ts';
 import type {VisionClient} from '../src/bedrock.ts';
@@ -25,7 +25,10 @@ const fingerprint = async (clipId: string, t: number, question: string): Promise
 
 const EXPECTED = JSON.parse(readFileSync(new URL('./invariance.expected.json', import.meta.url), 'utf8')) as Record<string, {prompt: string; key: string}>;
 
-test('the four original presets keep identical prompts and cache keys', async () => {
+// Needs the prepared clips (frames are not committed): run `node backend/scripts/fetch-clips.ts` first, otherwise this test skips itself.
+const CLIPS_READY = existsSync(`${CLIPS_DIR}/tos/frames/f_00000.jpg`) && existsSync(`${CLIPS_DIR}/sintel/frames/f_00000.jpg`);
+
+test('the four original presets keep identical prompts and cache keys', {skip: CLIPS_READY ? false : 'clips not prepared (run node backend/scripts/fetch-clips.ts)'}, async () => {
   for (const [clip, t] of MOMENTS) {
     for (const q of PRESETS) {
       const id = `${clip}@${t}|${q}`;
