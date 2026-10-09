@@ -90,7 +90,7 @@ Reproduce: `AWS_PROFILE=<profile> AWS_REGION=us-east-1 node backend/scripts/run.
 
 ## Repository map
 
-`app/` Vega app, `backend/` API, window selection, prompt, Bedrock client and eval scripts (with tests), `clips/` manifest, subtitles and indexes, `eval/` questions, configs, results, grades and cost log, `docs/` progress, decisions, friction log, product feedback, feature requests, demo script, user tests, submission text.
+`app/` Vega app, `backend/` API, window selection, prompt, Bedrock client and eval scripts (with tests), `clips/` manifest, subtitles and indexes, `eval/` questions, configs, results, grades and cost log, `docs/` progress, decisions, friction log, product feedback, feature requests, user tests.
 
 ## Licenses
 

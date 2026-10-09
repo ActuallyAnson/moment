@@ -72,7 +72,7 @@
 
 ## 2026-10-05 (Phase 5 in progress: submission materials drafted)
 - Fixed blockers: the app now takes its clip from `node backend/scripts/prepare-app-clip.ts <id>` (writes `app/src/clip.ts`), so a fresh clone can run; assistant-name strings removed from tracked files (git history still has a few and must be scrubbed before the repo goes public); app display name/package/manifest title renamed (build output is now `moment-app_aarch64.vpkg`); NOTICE covers all six clips; `backend/scripts/spend.ts` computes spend from the cost log (322 live calls, $0.2558 at this commit; refresh before submitting).
-- Drafted: README (with GIF and screenshots), docs/DEMO_SCRIPT.md, docs/PRODUCT_FEEDBACK.md, docs/FEATURE_REQUESTS.md, docs/SUBMISSION.md, cleaned docs/FRICTION_LOG.md (18 entries, all fields).
+- Drafted: README (with GIF and screenshots), docs/PRODUCT_FEEDBACK.md, docs/FEATURE_REQUESTS.md, cleaned docs/FRICTION_LOG.md, and the submission text and demo notes (kept outside the repository) (18 entries, all fields).
 - Placeholders that need real data: owner spot-check agreement rate; user-test summary or "not run"; repository URL and visibility; demo video URL.
 - Open decisions for the owner: repo public (after a history scrub, force-push) vs private + reviewers; enter the Open Source mini challenge or not; demo uses the build-time clip switch (option a).
 - Fresh-clone check (Oct 5, from a clean clone of origin/main in a new folder, following the README): backend `npm install` + 42 tests pass; `fetch-clips.ts tos` and `prepare-app-clip.ts tos` work; stub server answers `/ask` with the right frame window; app `npm install`, typecheck and 11 tests pass; `npm run build:app` produces `moment-app_aarch64.vpkg` and the app plays the clip on the Vega Virtual Device. Not re-run from the clone: live mode (needs AWS), the full six-clip fetch.
@@ -86,13 +86,13 @@
 - Prefetch merged (see DECISIONS): cold p50 2.4 s / p95 3.5 s; prefetched and asked 3 s after opening the panel p50 6 ms / p95 0.8 s.
 
 ## 2026-10-06 (Phase 6 done: features merged, docs updated, new video)
-- Merged: replay, clip picker, prefetch, action experiments (negative), docs. Demo video v2 (about 2:50, Kokoro af_heart voice, loudness-normalized) is at ~/Movies/moment-demo-v2-FINAL.mp4 with a captions-only version beside it; chapters in docs/YOUTUBE.md.
+- Merged: replay, clip picker, prefetch, action experiments (negative), docs. A demo video with a synthetic voice-over was produced (kept outside the repository).
 - Still open (owner): spot-check of 15 answers (eval/grading/recheck.html); user tests or an explicit "not tested with outside viewers yet"; confirm the new video; Oct 17 Open Source decision; Oct 19 history scrub and go public; Oct 20-22 upload and submit.
 
 ## 2026-10-06 (dialogue question done)
 - "What did they just say?" merged: answered from the subtitles (verbatim, no model call), honest answers when a clip has no subtitles or no cue in the last 10 s. 22 new owner-confirmed questions: dev3 A 100% vs model variant B 88% (rejected under a rule fixed before the run); locked holdout3: A 11/11 (mostly a plumbing check, see eval/results/dialogue-experiments.md). The original four presets are proven unchanged by an invariance test (59 backend tests, 15 app tests).
 - Prefetch re-measured with five presets: median 2 ms but 95th percentile 4.2 s (16/20 from prefetch, 1 of 250 prefetch calls failed, not a throttle); failures are now logged. Docs report both runs.
-- Video v3 (2:52) at ~/Movies/moment-demo-v3-FINAL.mp4; chapters in docs/YOUTUBE.md. Audio understanding (Transcribe or Whisper, sound cues) stays under "what's next".
+- Demo video v3 produced (kept outside the repository). Audio understanding (Transcribe or Whisper, sound cues) stays under "what's next".
 - Still open (owner): spot-check of 15 answers (eval/grading/recheck.html); user tests or an explicit "not tested with outside viewers yet"; watch video v3; Oct 17 Open Source decision; Oct 19 history scrub and go public; Oct 20-22 upload and submit.
 
 ## 2026-10-10

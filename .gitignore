@@ -16,3 +16,4 @@ eval/results/*-stub/
 eval/grading/grade.html
 eval/grading/recheck.html
 app/buildinfo.json
+private/
