@@ -94,3 +94,7 @@
 - Prefetch re-measured with five presets: median 2 ms but 95th percentile 4.2 s (16/20 from prefetch, 1 of 250 prefetch calls failed, not a throttle); failures are now logged. Docs report both runs.
 - Video v3 (2:52) at ~/Movies/moment-demo-v3-FINAL.mp4; chapters in docs/YOUTUBE.md. Audio understanding (Transcribe or Whisper, sound cues) stays under "what's next".
 - Still open (owner): spot-check of 15 answers (eval/grading/recheck.html); user tests or an explicit "not tested with outside viewers yet"; watch video v3; Oct 17 Open Source decision; Oct 19 history scrub and go public; Oct 20-22 upload and submit.
+
+## 2026-10-10
+- Prefetch retry-once fix merged with tests (60 backend tests). Third live run: cold median 2.9 s (1 timeout), prefetched median 30 ms / 95th percentile 1.2 s, 0 failed prefetch calls, so the retry did not trigger; docs now state the three-run ranges. Owner decided to skip the phone page. Spend 1392 calls, $0.5478.
+- Next: demo video re-render with the range slide, plus a LinkedIn showcase video.

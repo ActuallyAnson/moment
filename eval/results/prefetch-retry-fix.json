@@ -1,0 +1,58 @@
+{
+  "label": "retry-fix",
+  "N": 20,
+  "date": "2026-10-09T16:57:24.787Z",
+  "base": "http://127.0.0.1:8787",
+  "concurrency": "4",
+  "cold": {
+    "n": 20,
+    "errors": 1,
+    "p50": 2902,
+    "p95": 3680,
+    "mean": 2843,
+    "sources": {
+      "timeout": 1,
+      "live": 19
+    }
+  },
+  "prefetched": {
+    "n": 20,
+    "errors": 0,
+    "p50": 30,
+    "p95": 1156,
+    "mean": 144,
+    "sources": {
+      "prefetch": 10,
+      "joined": 10
+    }
+  },
+  "joined": {
+    "n": 20,
+    "errors": 0,
+    "p50": 2582,
+    "p95": 4553,
+    "mean": 2899,
+    "sources": {
+      "joined": 20
+    }
+  },
+  "burst": {
+    "opens": 10,
+    "prefetchStatsBefore": {
+      "started": 200,
+      "finished": 200,
+      "failed": 0,
+      "retried": 0,
+      "throttled": 0,
+      "cancelled": 0
+    },
+    "prefetchStatsAfter": {
+      "started": 228,
+      "finished": 224,
+      "failed": 0,
+      "retried": 0,
+      "throttled": 0,
+      "cancelled": 0
+    }
+  }
+}
