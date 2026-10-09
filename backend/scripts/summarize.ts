@@ -27,7 +27,7 @@ const runs = dirs.map((d) => {
   return {dir: d, meta, rows: rows.filter((r) => r.run === 0), all: rows};
 });
 
-const lines: string[] = ['# Eval summary', '', `Generated ${new Date().toISOString()}. Accuracy = (correct + 0.5 x partial) / graded. Grades are assistant-graded against the owner-confirmed expected answers; an owner spot-check sample validates them (see PROGRESS).`, ''];
+const lines: string[] = ['# Eval summary', '', `Generated ${new Date().toISOString()}. Accuracy = (correct + 0.5 x partial) / graded. Grades are assistant-graded against the owner-confirmed expected answers; an owner spot-check of 15 answers found the assistant somewhat more generous (see the README).`, ''];
 lines.push('| config | n | graded | accuracy | halluc. | not-visible abstain | false abstain | p50 ms | p95 ms | $/question |', '|---|---|---|---|---|---|---|---|---|---|');
 const sums = runs.map((r) => ({r, s: summarize(r.rows)}));
 for (const {r, s} of sums) {

@@ -98,3 +98,6 @@
 ## 2026-10-10
 - Prefetch retry-once fix merged with tests (60 backend tests). Third live run: cold median 2.9 s (1 timeout), prefetched median 30 ms / 95th percentile 1.2 s, 0 failed prefetch calls, so the retry did not trigger; docs now state the three-run ranges. Owner decided to skip the phone page. Spend 1392 calls, $0.5478.
 - Next: demo video re-render with the range slide, plus a LinkedIn showcase video.
+
+## 2026-10-10 (spot-check done)
+- Owner re-graded 15 stratified answers: 8/15 identical, 14/15 within one level, 13/15 same acceptable-or-not; assistant more generous (owner stricter on 5, more lenient on 2; owner called none hallucinated). Owner grades applied to those keys; summaries regenerated; dev numbers for the non-default configs dropped slightly; locked-set results unchanged. Repo is public (history scrubbed; planning and promo files kept out of it).

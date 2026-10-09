@@ -22,6 +22,6 @@ Paired, B had 0 wins and 2 losses against A: on one item it quoted an older line
 ## How to read these numbers
 - This is mostly a check that the *plumbing* is right (window rule, recency, honest no-subtitles answers), because variant A copies the subtitle text: it is exact by construction, and 100% says nothing about how well a model understands speech.
 - Only 16 dialogue items exist because the two subtitled clips have only 11 cues each; they are small samples and the cues overlap between neighbouring pauses (the dev and locked splits were chosen to share none).
-- Grading is by an automated assistant against owner-confirmed expected answers; the owner spot-check is still pending.
+- Grading is by an automated assistant against owner-confirmed expected answers; an owner spot-check of 15 answers from earlier runs found the assistant somewhat more generous than the owner (see the README); the dialogue answers here are exact quotes, so that matters little for them.
 - A cue that has already started is shown whole, including words that finish after the pause, as a subtitle viewer would see it. Tears of Steel's cue 9 also contains a quoted on-screen caption ("Fourty years later"), so that line appears as part of the dialogue answer.
 - The clips are silent, so the feature is demonstrated on subtitled silent clips. It has not been tested with real audio, nor with deaf or hard-of-hearing viewers; Moment is AI-enhanced viewing that may help such viewers, not something built for them.

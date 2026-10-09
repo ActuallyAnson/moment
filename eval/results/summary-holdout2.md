@@ -1,6 +1,6 @@
 # Eval summary
 
-Generated 2026-10-06T06:24:36.098Z. Accuracy = (correct + 0.5 x partial) / graded. Grades are assistant-graded against the owner-confirmed expected answers; an owner spot-check sample validates them (see PROGRESS).
+Generated 2026-10-09T17:45:31.982Z. Accuracy = (correct + 0.5 x partial) / graded. Grades are assistant-graded against the owner-confirmed expected answers; an owner spot-check of 15 answers found the assistant somewhat more generous (see the README).
 
 | config | n | graded | accuracy | halluc. | not-visible abstain | false abstain | p50 ms | p95 ms | $/question |
 |---|---|---|---|---|---|---|---|---|---|
